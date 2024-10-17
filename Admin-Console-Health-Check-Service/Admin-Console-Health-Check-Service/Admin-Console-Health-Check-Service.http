@@ -1,0 +1,6 @@
+@Admin_Console_Health_Check_Service_HostAddress = http://localhost:5217
+
+GET {{Admin_Console_Health_Check_Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
