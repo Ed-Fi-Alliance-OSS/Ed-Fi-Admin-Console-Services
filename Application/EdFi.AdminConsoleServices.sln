@@ -5,6 +5,8 @@ VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EdFi.AdminConsoleHealthCheckService", "EdFi.AdminConsoleHealthCheckService\EdFi.AdminConsoleHealthCheckService.csproj", "{219675DF-FAA7-42F2-9EA7-6A2CD8F1E8DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EdFi.Ods.AdminApi.AdminConsole.HealthCheckService", "EdFi.Ods.AdminApi.AdminConsole.HealthCheckService\EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.csproj", "{846BC49A-2AA9-4031-8689-DC5E7CD08E56}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{219675DF-FAA7-42F2-9EA7-6A2CD8F1E8DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{219675DF-FAA7-42F2-9EA7-6A2CD8F1E8DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{219675DF-FAA7-42F2-9EA7-6A2CD8F1E8DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{846BC49A-2AA9-4031-8689-DC5E7CD08E56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{846BC49A-2AA9-4031-8689-DC5E7CD08E56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{846BC49A-2AA9-4031-8689-DC5E7CD08E56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{846BC49A-2AA9-4031-8689-DC5E7CD08E56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
