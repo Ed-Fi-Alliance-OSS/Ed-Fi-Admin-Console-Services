@@ -7,18 +7,13 @@ using System.Text;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.OdsApi;
 
-public interface IOdsApi
+public interface IOdsApiClient
 {
-    Task<ApiResponse> Get(string endpointUrl, string postInfo = null);
-    ApiConfig Config { get; set; }
+    Task<ApiResponse> Get(string authenticationUrl, string clientId, string clientSecret, string resourcesUrl, string getInfo);
 }
 
-public class OdsApiClient : IOdsApi
+public class OdsApiClient : IOdsApiClient
 {
-    public ApiConfig Config { get; set; }
-
-    //HttpClient instances are meant to be long-lived and shared, so we only
-    //have separate instances when they would be configured differently.
     private static HttpClient _unauthenticatedHttpClient;
     private readonly ILogger _logger;
     private readonly IOptions<AppSettings> _options;
@@ -31,7 +26,6 @@ public class OdsApiClient : IOdsApi
     {
         _logger = logger;
         _options = options;
-        Config = config;
         AuthenticatedHttpClient = new Lazy<HttpClient>(CreateAuthenticatedHttpClient);
 
         if (_options.Value.IgnoresCertificateErrors)
@@ -63,11 +57,11 @@ public class OdsApiClient : IOdsApi
         return httpClient;
     }
 
-    private async Task Authenticate()
+    private async Task Authenticate(string authenticationUrl, string clientId, string clientSecret)
     {
         if (AccessToken == null)
         {
-            AccessToken = await GetAccessToken(Config.AccessTokenUrl, Config.ClientId, Config.ClientSecret);
+            AccessToken = await GetAccessToken(authenticationUrl, clientId, clientSecret);
         }
     }
 
@@ -127,9 +121,9 @@ public class OdsApiClient : IOdsApi
         return jsonToken["access_token"].ToString();
     }
 
-    public async Task<ApiResponse> Get(string endpointUrl, string getInfo)
+    public async Task<ApiResponse> Get(string authenticationUrl, string clientId, string clientSecret, string resourcesUrl, string getInfo)
     {
-        await Authenticate();
+        await Authenticate(authenticationUrl, clientId, clientSecret);
 
         const int RetryAttempts = 3;
         var currentAttempt = 0;
@@ -140,13 +134,13 @@ public class OdsApiClient : IOdsApi
             var strContent = new StringContent(string.Empty);
             strContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            response = await AuthenticatedHttpClient.Value.GetAsync(endpointUrl);
+            response = await AuthenticatedHttpClient.Value.GetAsync(resourcesUrl);
             currentAttempt++;
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 AccessToken = null;
-                await Authenticate();
+                await Authenticate(authenticationUrl, clientId, clientSecret);
                 AuthenticatedHttpClient = new Lazy<HttpClient>(CreateAuthenticatedHttpClient);
                 _logger.LogWarning("GET failed. Reason: {reason}. StatusCode: {status}.", response.ReasonPhrase, response.StatusCode);
                 _logger.LogInformation("Refreshing token and retrying GET request for {info}.", getInfo);

@@ -1,4 +1,8 @@
-﻿using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure;
+﻿// SPDX-License-Identifier: Apache-2.0
+// Licensed to the Ed-Fi Alliance under one or more agreements.
+// The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
+// See the LICENSE and NOTICES files in the project root for more information.
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -8,33 +12,28 @@ using System.Text;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.AdminApi;
 
-public interface IAdminApi
+public interface IAdminApiClient
 {
-    Task<ApiResponse> Get(string endpointUrl, string postInfo = null);
+    Task<ApiResponse> Get(string endpointUrl, string getInfo = null);
     Task<ApiResponse> Post(string content, string endpointUrl, string postInfo = null);
-    ApiConfig Config { get; set; }
 }
 
-
-public class AdminApiClient : IAdminApi
+public class AdminApiClient : IAdminApiClient
 {
-    public ApiConfig Config { get; set; }
-
-    //HttpClient instances are meant to be long-lived and shared, so we only
-    //have separate instances when they would be configured differently.
-    private static HttpClient _unauthenticatedHttpClient;
+    private static HttpClient? _unauthenticatedHttpClient;
     private readonly ILogger _logger;
     private readonly IOptions<AppSettings> _options;
+    private readonly IOptions<AdminApiSettings> _adminApiOptions;
 
     private Lazy<HttpClient> AuthenticatedHttpClient { get; set; }
 
     private string? AccessToken { get; set; }
 
-    public AdminApiClient(ILogger logger, ApiConfig config, IOptions<AppSettings> options)
+    public AdminApiClient(ILogger logger, IOptions<AppSettings> options, IOptions<AdminApiSettings> adminApiOptions)
     {
         _logger = logger;
         _options = options;
-        Config = config;
+        _adminApiOptions = adminApiOptions;
         AuthenticatedHttpClient = new Lazy<HttpClient>(CreateAuthenticatedHttpClient);
 
         if (_options.Value.IgnoresCertificateErrors)
@@ -70,7 +69,7 @@ public class AdminApiClient : IAdminApi
     {
         if (AccessToken == null)
         {
-            AccessToken = await GetAccessToken(Config.AccessTokenUrl, Config.ClientId, Config.ClientSecret);
+            AccessToken = await GetAccessToken(_adminApiOptions.Value.AccessTokenUrl, _adminApiOptions.Value.ClientId, _adminApiOptions.Value.ClientSecret);
         }
     }
 
@@ -98,29 +97,33 @@ public class AdminApiClient : IAdminApi
     {
         FormUrlEncodedContent contentParams;
 
-        if (authorizationCode != null)
-        {
+        //if (authorizationCode != null)
+        //{
             contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
                 {
-                    new KeyValuePair<string, string>("Client_id", clientId),
-                    new KeyValuePair<string, string>("Client_secret", clientSecret),
-                    new KeyValuePair<string, string>("Code", authorizationCode),
-                    new KeyValuePair<string, string>("Grant_type", "authorization_code")
-                });
-        }
-        else
-        {
-            contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
-                {
-                    new KeyValuePair<string, string>("Grant_type", "client_credentials")
+                    new KeyValuePair<string, string>("client_id", clientId),
+                    new KeyValuePair<string, string>("client_secret", clientSecret),
+                    new KeyValuePair<string, string>("grant_type", "client_credentials"),
+                    new KeyValuePair<string, string>("scope", "edfi_admin_api/full_access")
                 });
 
-            var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
-            _unauthenticatedHttpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret));
-        }
+        contentParams.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+        //}
+        //else
+        //{
+        //    contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+        //        {
+        //            new KeyValuePair<string, string>("Grant_type", "client_credentials")
+        //        });
+
+        //    var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
+        //    _unauthenticatedHttpClient.DefaultRequestHeaders.Authorization =
+        //        new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret));
+        //}
 
         var response = await _unauthenticatedHttpClient.PostAsync(accessTokenUrl, contentParams);
+
+        var responseString = await response.Content.ReadAsStringAsync();
 
         if (response.StatusCode != HttpStatusCode.OK)
             throw new Exception("Failed to get Access Token. HTTP Status Code: " + response.StatusCode);

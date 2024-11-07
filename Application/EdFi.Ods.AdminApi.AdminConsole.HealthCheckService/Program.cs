@@ -1,49 +1,85 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿// SPDX-License-Identifier: Apache-2.0
+// Licensed to the Ed-Fi Alliance under one or more agreements.
+// The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
+// See the LICENSE and NOTICES files in the project root for more information.
+
+using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService;
+using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using System.Net;
+using System.Reflection;
 
 public class Program
 {
     public static async Task Main(string[] args)
     {
-        var host = CreateDefaultApp(args).Build();
+        Log.Logger = DefaultLogger.Build();
 
-        Console.WriteLine("starting");
-        await host.RunAsync();
-        Console.WriteLine("stopped");
-
-
-        var urls = new List<string>
+        try
         {
-            "https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/studentSchoolAssociations?offset=0&limit=0&totalCount=true",
-            "https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/studentSectionAssociations?offset=0&limit=0&totalCount=true",
-            "https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/studentSchoolAttendanceEvents?offset=0&limit=0&totalCount=true",
-            "https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/courseTranscripts?offset=0&limit=0&totalCount=true",
-            "https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/sections?offset=0&limit=0&totalCount=true"
-        };
-
-        var tasks = new List<Task>();
-
-        foreach (var url in urls)
-        {
-            tasks.Add(Task.Run(() => SendRequestAsync(url)));
+            await Run(args);
         }
-
-        await Task.WhenAll(tasks);
-        Console.WriteLine("All requests completed.");
+        catch (Exception exception)
+        {
+            Log.Fatal(exception, "Host terminated unexpectedly");
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
     }
 
-    private static IHostBuilder CreateDefaultApp(string[] args)
+    private static async Task Run(string[] args)
     {
-        var builder = Host.CreateDefaultBuilder();
-        
-        return builder;
+        Log.Information("Building host");
+        var host = CreateHostBuilder(args);
+        host.ConfigureServices(
+            (context, services) => services.ConfigureTransformLoadServices(context.Configuration));
+
+        host.UseConsoleLifetime();
+
+        using var builtHost = host.Build();//.ConfigureStaticGlobals();
+
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        var assembly = Assembly.GetExecutingAssembly();
+        var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                                           ?.InformationalVersion;
+
+        //Use full logger after DB migration
+        var logger = builtHost.Services.GetService<ILogger<Program>>();
+        logger.LogInformation("{name} {version} Starting", assembly.GetName().Name, informationalVersion);
+
+        // Force TLS 1.2, resolving an error in Azure where all calls between DataImport and ODS API fail
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+        // Not using run because this process is done when this returns.
+        //If you do the host wait, it deadlocks since the host already completed and nothing signals the wait task.
+        Log.Information("Starting host");
+        await builtHost.StartAsync(cancellationTokenSource.Token);
     }
 
-    static async Task SendRequestAsync(string url)
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host
+            .CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration(ConfigureAppConfig)
+            .UseSerilog();
+
+    private static void ConfigureAppConfig(HostBuilderContext context, IConfigurationBuilder config)
     {
-        using (HttpClient client = new HttpClient())
-        {
-            var response = await client.GetAsync(url);
-            Console.WriteLine($"Response from {url}: {response.StatusCode}");
-        }
+        var runPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+        var loggingConfigFile = Path.Combine(runPath ?? "./", "logging.json");
+        var env = context.HostingEnvironment;
+        config.Sources.Clear();
+
+        config.AddJsonFile(loggingConfigFile, optional: false)
+              .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+              .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+        config.AddEnvironmentVariables();
     }
 }
