@@ -6,13 +6,13 @@
 using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.DTO;
 using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.AdminApi;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features;
 
 public interface IAdminApiCaller
 {
-    Task<IEnumerable<AdminApiInstance>> ExecuteAsync();
+    Task<IEnumerable<AdminApiInstanceDto>> ExecuteAsync();
 }
 
 public class AdminApiCaller : IAdminApiCaller   
@@ -26,21 +26,20 @@ public class AdminApiCaller : IAdminApiCaller
         _adminApiOptions = adminApiOptions.Value;
     }
 
-    public async Task<IEnumerable<AdminApiInstance>> ExecuteAsync()
+    public async Task<IEnumerable<AdminApiInstanceDto>> ExecuteAsync()
     {
         return await GetInstances();
     }
 
-    private async Task<IEnumerable<AdminApiInstance>> GetInstances()
+    private async Task<IEnumerable<AdminApiInstanceDto>> GetInstances()
     {
         var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleURI;
         var response = await _adminApi.Get(instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
 
         if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
         {
-            var instances = JsonSerializer.Deserialize<List<AdminApiInstance>>(response.Content);
-            return instances;
+            return JsonConvert.DeserializeObject<IEnumerable<AdminApiInstanceDto>>(response.Content);
         }
-        return new List<AdminApiInstance>();
+        return new List<AdminApiInstanceDto>();
     }
 }

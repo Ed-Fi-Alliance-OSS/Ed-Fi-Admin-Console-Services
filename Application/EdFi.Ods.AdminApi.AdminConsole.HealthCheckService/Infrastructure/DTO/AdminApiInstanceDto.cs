@@ -5,7 +5,7 @@
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.DTO;
 
-public class AdminApiInstance
+public class AdminApiInstanceDto
 {
     public string TenantId { get; set; } = string.Empty;
     public string InstanceId { get; set; } = string.Empty;

@@ -18,15 +18,21 @@ public interface IApplication
 public class Application : IApplication, IHostedService
 {
     private readonly IAdminApiCaller _adminApiCaller;
+    private readonly IOdsApiCaller _odsApiCaller;
 
-    public Application(IAdminApiCaller adminApiCaller, IOptions<AdminApiSettings> adminApiOptions)
+    public Application(IAdminApiCaller adminApiCaller, IOdsApiCaller odsApiCaller, IOptions<AdminApiSettings> adminApiOptions)
     {
         _adminApiCaller = adminApiCaller;
+        _odsApiCaller = odsApiCaller;
     }
     public async Task Run()
     {
         var instances = await _adminApiCaller.ExecuteAsync();
         Console.WriteLine(instances);
+
+        await _odsApiCaller.ExecuteAsync(instances);
+        Console.WriteLine(instances);
+
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

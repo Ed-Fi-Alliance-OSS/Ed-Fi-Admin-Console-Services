@@ -14,7 +14,7 @@ public interface IOdsApiClient
 
 public class OdsApiClient : IOdsApiClient
 {
-    private static HttpClient _unauthenticatedHttpClient;
+    private static HttpClient _unauthenticatedHttpClient = new();
     private readonly ILogger _logger;
     private readonly IOptions<AppSettings> _options;
 
@@ -22,7 +22,7 @@ public class OdsApiClient : IOdsApiClient
 
     private string? AccessToken { get; set; }
 
-    public OdsApiClient(ILogger logger, ApiConfig config, IOptions<AppSettings> options)
+    public OdsApiClient(ILogger logger, IOptions<AppSettings> options)
     {
         _logger = logger;
         _options = options;
@@ -85,7 +85,7 @@ public class OdsApiClient : IOdsApiClient
         return jsonToken["code"].ToString();
     }
 
-    private static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret, string authorizationCode = null)
+    private static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret, string? authorizationCode = null)
     {
         FormUrlEncodedContent contentParams;
 
@@ -103,7 +103,7 @@ public class OdsApiClient : IOdsApiClient
         {
             contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
                 {
-                    new KeyValuePair<string, string>("Grant_type", "client_credentials")
+                    new KeyValuePair<string, string>("grant_type", "client_credentials")
                 });
 
             var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
@@ -127,7 +127,7 @@ public class OdsApiClient : IOdsApiClient
 
         const int RetryAttempts = 3;
         var currentAttempt = 0;
-        HttpResponseMessage response = null;
+        HttpResponseMessage response = new HttpResponseMessage();
 
         while (RetryAttempts > currentAttempt)
         {
@@ -151,7 +151,7 @@ public class OdsApiClient : IOdsApiClient
 
         var responseContent = await response.Content.ReadAsStringAsync();
 
-        return new ApiResponse(response.StatusCode, responseContent);
+        return new ApiResponse(response.StatusCode, responseContent, response.Headers);
     }
 
     private HttpClientHandler IgnoresCertificateErrorsHandler()

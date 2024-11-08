@@ -14,13 +14,13 @@ namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Servi
 
 public interface IAdminApiClient
 {
-    Task<ApiResponse> Get(string endpointUrl, string getInfo = null);
-    Task<ApiResponse> Post(string content, string endpointUrl, string postInfo = null);
+    Task<ApiResponse> Get(string endpointUrl, string getInfo);
+    Task<ApiResponse> Post(string content, string endpointUrl, string postInfo);
 }
 
 public class AdminApiClient : IAdminApiClient
 {
-    private static HttpClient? _unauthenticatedHttpClient;
+    private static HttpClient _unauthenticatedHttpClient = new HttpClient();
     private readonly ILogger _logger;
     private readonly IOptions<AppSettings> _options;
     private readonly IOptions<AdminApiSettings> _adminApiOptions;
@@ -39,10 +39,6 @@ public class AdminApiClient : IAdminApiClient
         if (_options.Value.IgnoresCertificateErrors)
         {
             _unauthenticatedHttpClient = new HttpClient(IgnoresCertificateErrorsHandler());
-        }
-        else
-        {
-            _unauthenticatedHttpClient = new HttpClient();
         }
     }
 
@@ -73,54 +69,20 @@ public class AdminApiClient : IAdminApiClient
         }
     }
 
-    private async Task<string> GetAuthorizationCode(string authorizeUrl, string clientId)
-    {
-        var contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("Client_id", clientId),
-                new KeyValuePair<string, string>("Response_type", "code")
-            });
-
-        _logger.LogInformation("Retrieving auth code from {url}", authorizeUrl);
-
-        var response = await _unauthenticatedHttpClient.PostAsync(authorizeUrl, contentParams);
-
-        if (response.StatusCode != HttpStatusCode.OK)
-            throw new Exception("Failed to get Authorization Code. HTTP Status Code: " + response.StatusCode);
-
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        var jsonToken = JToken.Parse(jsonResponse);
-        return jsonToken["code"].ToString();
-    }
-
-    private static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret, string authorizationCode = null)
+    private static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret, string? authorizationCode = null)
     {
         FormUrlEncodedContent contentParams;
 
-        //if (authorizationCode != null)
-        //{
-            contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
-                {
-                    new KeyValuePair<string, string>("client_id", clientId),
-                    new KeyValuePair<string, string>("client_secret", clientSecret),
-                    new KeyValuePair<string, string>("grant_type", "client_credentials"),
-                    new KeyValuePair<string, string>("scope", "edfi_admin_api/full_access")
-                });
+        contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("client_id", clientId),
+                new KeyValuePair<string, string>("client_secret", clientSecret),
+                new KeyValuePair<string, string>("grant_type", "client_credentials"),
+                new KeyValuePair<string, string>("scope", "edfi_admin_api/full_access")
+            });
 
         contentParams.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-        //}
-        //else
-        //{
-        //    contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
-        //        {
-        //            new KeyValuePair<string, string>("Grant_type", "client_credentials")
-        //        });
-
-        //    var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
-        //    _unauthenticatedHttpClient.DefaultRequestHeaders.Authorization =
-        //        new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret));
-        //}
-
+        
         var response = await _unauthenticatedHttpClient.PostAsync(accessTokenUrl, contentParams);
 
         var responseString = await response.Content.ReadAsStringAsync();
@@ -139,7 +101,7 @@ public class AdminApiClient : IAdminApiClient
 
         const int RetryAttempts = 3;
         var currentAttempt = 0;
-        HttpResponseMessage response = null;
+        HttpResponseMessage response = new HttpResponseMessage();
 
         while (RetryAttempts > currentAttempt)
         {
@@ -172,7 +134,7 @@ public class AdminApiClient : IAdminApiClient
 
         const int RetryAttempts = 3;
         var currentAttempt = 0;
-        HttpResponseMessage response = null;
+        HttpResponseMessage response = new HttpResponseMessage();
 
         while (RetryAttempts > currentAttempt)
         {

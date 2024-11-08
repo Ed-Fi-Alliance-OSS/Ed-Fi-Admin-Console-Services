@@ -33,9 +33,7 @@ public static class Startup
 
         services.AddSingleton<ILogger>(sp => sp.GetService<ILogger<NoLoggingCategoryPlaceHolder>>());
 
-        services.AddSingleton<ILogger>(sp => sp.GetService<ILogger<NoLoggingCategoryPlaceHolder>>());
-
-        services.AddSingleton<IOdsApiEndpoints, OdsApiEndpoints>();
+        services.AddSingleton<IOdsApiEndpoints, OdsApiEndpointsDto>();
 
         services.AddTransient<IAppSettings>(sp => sp.GetService<IOptions<AppSettings>>().Value);
         services.AddTransient<IAdminApiSettings>(sp => sp.GetService<IOptions<AdminApiSettings>>().Value);

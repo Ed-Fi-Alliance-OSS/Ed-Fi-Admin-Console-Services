@@ -4,16 +4,23 @@
 // See the LICENSE and NOTICES files in the project root for more information.
 
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure;
 public class ApiResponse
 {
     public HttpStatusCode StatusCode { get; }
     public string Content { get; }
+    public HttpResponseHeaders? Headers { get; }
 
     public ApiResponse(HttpStatusCode statusCode, string content)
     {
         StatusCode = statusCode;
         Content = content;
+        Headers = null;
+    }
+    public ApiResponse(HttpStatusCode statusCode, string content, HttpResponseHeaders? headers = null) : this(statusCode, content)
+    {
+        Headers = headers;
     }
 }
