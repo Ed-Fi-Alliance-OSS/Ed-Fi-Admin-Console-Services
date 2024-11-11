@@ -23,7 +23,7 @@ public class Application : IApplication, IHostedService
     private readonly IAdminApiCaller _adminApiCaller;
     private readonly IOdsApiCaller _odsApiCaller;
 
-    public Application(ILogger logger, IAdminApiCaller adminApiCaller, IOdsApiCaller odsApiCaller, IOptions<AdminApiSettings> adminApiOptions)
+    public Application(ILogger logger, IAdminApiCaller adminApiCaller, IOdsApiCaller odsApiCaller)
     {
         _logger = logger;
         _adminApiCaller = adminApiCaller;

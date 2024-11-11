@@ -19,20 +19,20 @@ public interface IAdminApiCaller
 public class AdminApiCaller : IAdminApiCaller
 {
     private readonly ILogger _logger;
-    private IAdminApiClient _adminApi;
+    private IAdminApiClient _adminApiClient;
     private readonly AdminApiSettings _adminApiOptions;
 
-    public AdminApiCaller(ILogger logger, IAdminApiClient adminApi, IOptions<AdminApiSettings> adminApiOptions)
+    public AdminApiCaller(ILogger logger, IAdminApiClient adminApiClient, IOptions<AdminApiSettings> adminApiOptions)
     {
         _logger = logger;
-        _adminApi = adminApi;
+        _adminApiClient = adminApiClient;
         _adminApiOptions = adminApiOptions.Value;
     }
 
     public async Task<IEnumerable<AdminApiInstance>?> GetInstancesAsync()
     {
         var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI;
-        var response = await _adminApi.Get(instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
+        var response = await _adminApiClient.Get(instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
 
         if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
         {
@@ -48,7 +48,7 @@ public class AdminApiCaller : IAdminApiCaller
         var json = System.Text.Json.JsonSerializer.Serialize(instanceHealthCheckData);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _adminApi.Post(content, healthCheckEndpoint, "Posting HealthCheck to Admin API - Admin Console extension");
+        var response = await _adminApiClient.Post(content, healthCheckEndpoint, "Posting HealthCheck to Admin API - Admin Console extension");
 
         if (response.StatusCode != System.Net.HttpStatusCode.Created)
         {

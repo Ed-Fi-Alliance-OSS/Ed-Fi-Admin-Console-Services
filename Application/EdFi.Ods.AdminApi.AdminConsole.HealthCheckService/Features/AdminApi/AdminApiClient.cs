@@ -18,47 +18,13 @@ public interface IAdminApiClient
     Task<ApiResponse> Post(StringContent content, string endpointUrl, string postInfo);
 }
 
-public class AdminApiClient : IAdminApiClient
+public class AdminApiClient : ApiClient, IAdminApiClient
 {
-    private static HttpClient _unauthenticatedHttpClient = new HttpClient();
-    private readonly ILogger _logger;
-    private readonly IOptions<AppSettings> _options;
     private readonly IOptions<AdminApiSettings> _adminApiOptions;
 
-    private Lazy<HttpClient> AuthenticatedHttpClient { get; set; }
-
-    private string? AccessToken { get; set; }
-
-    public AdminApiClient(ILogger logger, IOptions<AppSettings> options, IOptions<AdminApiSettings> adminApiOptions)
+    public AdminApiClient(ILogger logger, IOptions<AppSettings> options, IOptions<AdminApiSettings> adminApiOptions) : base(logger, options)
     {
-        _logger = logger;
-        _options = options;
         _adminApiOptions = adminApiOptions;
-        AuthenticatedHttpClient = new Lazy<HttpClient>(CreateAuthenticatedHttpClient);
-
-        if (_options.Value.IgnoresCertificateErrors)
-        {
-            _unauthenticatedHttpClient = new HttpClient(IgnoresCertificateErrorsHandler());
-        }
-    }
-
-    private HttpClient CreateAuthenticatedHttpClient()
-    {
-        if (AccessToken == null)
-            throw new Exception("An attempt was made to make authenticated HTTP requests without an Access Token.");
-
-        HttpClient httpClient;
-        if (_options.Value.IgnoresCertificateErrors)
-        {
-            httpClient = new HttpClient(IgnoresCertificateErrorsHandler());
-        }
-        else
-        {
-            httpClient = new HttpClient();
-        }
-
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", AccessToken);
-        return httpClient;
     }
 
     private async Task Authenticate()
@@ -69,11 +35,9 @@ public class AdminApiClient : IAdminApiClient
         }
     }
 
-    private static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret, string? authorizationCode = null)
+    private static new async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret)
     {
-        FormUrlEncodedContent contentParams;
-
-        contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+        FormUrlEncodedContent contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
             {
                 new KeyValuePair<string, string>("client_id", clientId),
                 new KeyValuePair<string, string>("client_secret", clientSecret),
@@ -158,18 +122,5 @@ public class AdminApiClient : IAdminApiClient
         var responseContent = await response.Content.ReadAsStringAsync();
 
         return new ApiResponse(response.StatusCode, responseContent);
-    }
-
-    private HttpClientHandler IgnoresCertificateErrorsHandler()
-    {
-        var handler = new HttpClientHandler();
-        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-        handler.ServerCertificateCustomValidationCallback =
-            (httpRequestMessage, cert, cetChain, policyErrors) =>
-            {
-                return true;
-            };
-
-        return handler;
     }
 }
