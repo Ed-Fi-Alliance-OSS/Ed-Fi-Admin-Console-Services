@@ -3,14 +3,11 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
-namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService;
+namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
 
-public interface IOdsApiSettings
+public class OdsApiEndpointNameCount
 {
-    IEnumerable<string> Endpoints { get; set; }
-}
+    public string OdsApiEndpointName { get; set; } = string.Empty;
 
-public  class OdsApiSettings : IOdsApiSettings
-{
-    public IEnumerable<string> Endpoints { get; set; } = new List<string>();
+    public int OdsApiEndpointCount { get; set; } = 0;
 }

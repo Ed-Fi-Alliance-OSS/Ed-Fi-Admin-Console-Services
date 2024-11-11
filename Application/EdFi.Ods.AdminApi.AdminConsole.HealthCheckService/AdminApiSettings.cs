@@ -8,7 +8,8 @@ namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService;
 public interface IAdminApiSettings
 {
     string ApiUrl { get; set; }
-    string AdminConsoleURI { get; set; }
+    string AdminConsoleInstancesURI { get; set; }
+    string AdminConsoleHealthCheckURI { get; set; }
     string AccessTokenUrl { get; set; }
     string ClientId { get; set; }
     string ClientSecret { get; set; }
@@ -17,7 +18,8 @@ public interface IAdminApiSettings
 public sealed class AdminApiSettings : IAdminApiSettings
 {
     public string ApiUrl { get; set; } = string.Empty;
-    public string AdminConsoleURI { get; set; } = string.Empty;
+    public string AdminConsoleInstancesURI { get; set; } = string.Empty;
+    public string AdminConsoleHealthCheckURI { get; set; } = string.Empty;
     public string AccessTokenUrl { get; set; } = string.Empty;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;

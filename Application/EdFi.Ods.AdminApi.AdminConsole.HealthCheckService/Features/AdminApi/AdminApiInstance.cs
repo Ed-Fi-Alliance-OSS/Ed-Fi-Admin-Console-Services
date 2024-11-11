@@ -3,12 +3,13 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
-namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.DTO;
+namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
 
-public class AdminApiInstanceDto
+public class AdminApiInstance
 {
-    public string TenantId { get; set; } = string.Empty;
-    public string InstanceId { get; set; } = string.Empty;
+    public int TenantId { get; set; } = 0;
+    public int InstanceId { get; set; } = 0;
+    public int EdOrgId { get; set; } = 0;
     public string InstanceName { get; set; } = string.Empty;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;

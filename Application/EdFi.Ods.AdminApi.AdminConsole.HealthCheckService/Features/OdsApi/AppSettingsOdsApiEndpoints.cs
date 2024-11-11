@@ -6,19 +6,19 @@
 using Microsoft.Extensions.Options;
 using System.Collections;
 
-namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.DTO;
+namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
 
-public interface IOdsApiEndpoints : IEnumerable<string>
+public interface IAppSettingsOdsApiEndpoints : IEnumerable<string>
 {
-    
+
 }
 
-public  class OdsApiEndpointsDto : IOdsApiEndpoints
+public class AppSettingsOdsApiEndpoints : IAppSettingsOdsApiEndpoints
 {
     private List<string> endpoints;
     private OdsApiSettings _odsApiOptions;
 
-    public OdsApiEndpointsDto(IOptions<OdsApiSettings> odsApiOptions)
+    public AppSettingsOdsApiEndpoints(IOptions<OdsApiSettings> odsApiOptions)
     {
         _odsApiOptions = odsApiOptions.Value;
 
@@ -33,6 +33,6 @@ public  class OdsApiEndpointsDto : IOdsApiEndpoints
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return this.GetEnumerator();
+        return GetEnumerator();
     }
 }

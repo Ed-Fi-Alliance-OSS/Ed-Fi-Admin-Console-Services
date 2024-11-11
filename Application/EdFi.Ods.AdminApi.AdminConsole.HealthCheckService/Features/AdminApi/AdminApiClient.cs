@@ -3,19 +3,19 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Text;
 
-namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.AdminApi;
+namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
 
 public interface IAdminApiClient
 {
     Task<ApiResponse> Get(string endpointUrl, string getInfo);
-    Task<ApiResponse> Post(string content, string endpointUrl, string postInfo);
+    Task<ApiResponse> Post(StringContent content, string endpointUrl, string postInfo);
 }
 
 public class AdminApiClient : IAdminApiClient
@@ -82,7 +82,7 @@ public class AdminApiClient : IAdminApiClient
             });
 
         contentParams.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-        
+
         var response = await _unauthenticatedHttpClient.PostAsync(accessTokenUrl, contentParams);
 
         var responseString = await response.Content.ReadAsStringAsync();
@@ -128,7 +128,7 @@ public class AdminApiClient : IAdminApiClient
         return new ApiResponse(response.StatusCode, responseContent);
     }
 
-    public async Task<ApiResponse> Post(string content, string endpointUrl, string postInfo)
+    public async Task<ApiResponse> Post(StringContent content, string endpointUrl, string postInfo)
     {
         await Authenticate();
 
@@ -138,10 +138,9 @@ public class AdminApiClient : IAdminApiClient
 
         while (RetryAttempts > currentAttempt)
         {
-            var strContent = new StringContent(content);
-            strContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            response = await AuthenticatedHttpClient.Value.PostAsync(endpointUrl, strContent);
+            response = await AuthenticatedHttpClient.Value.PostAsync(endpointUrl, content);
             currentAttempt++;
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)

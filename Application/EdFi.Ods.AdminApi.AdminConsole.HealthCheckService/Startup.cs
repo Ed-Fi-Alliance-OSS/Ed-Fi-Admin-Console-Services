@@ -3,10 +3,8 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
-using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features;
-using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.DTO;
-using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.AdminApi;
-using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.OdsApi;
+using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
+using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,11 +17,6 @@ public class NoLoggingCategoryPlaceHolder { }
 
 public static class Startup
 {
-    public static IHost ConfigureStaticGlobals(this IHost host)
-    {
-        return host;
-    }
-
     public static IServiceCollection ConfigureTransformLoadServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions();
@@ -33,11 +26,7 @@ public static class Startup
 
         services.AddSingleton<ILogger>(sp => sp.GetService<ILogger<NoLoggingCategoryPlaceHolder>>());
 
-        services.AddSingleton<IOdsApiEndpoints, OdsApiEndpointsDto>();
-
-        services.AddTransient<IAppSettings>(sp => sp.GetService<IOptions<AppSettings>>().Value);
-        services.AddTransient<IAdminApiSettings>(sp => sp.GetService<IOptions<AdminApiSettings>>().Value);
-        services.AddTransient<IOdsApiSettings>(sp => sp.GetService<IOptions<OdsApiSettings>>().Value);
+        services.AddSingleton<IAppSettingsOdsApiEndpoints, AppSettingsOdsApiEndpoints>();
 
         services.AddTransient<IAdminApiClient, AdminApiClient>();
         services.AddTransient<IOdsApiClient, OdsApiClient>();

@@ -1,11 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure.Services.OdsApi;
+namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
 
 public interface IOdsApiClient
 {
@@ -65,26 +66,6 @@ public class OdsApiClient : IOdsApiClient
         }
     }
 
-    private async Task<string> GetAuthorizationCode(string authorizeUrl, string clientId)
-    {
-        var contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("Client_id", clientId),
-                new KeyValuePair<string, string>("Response_type", "code")
-            });
-
-        _logger.LogInformation("Retrieving auth code from {url}", authorizeUrl);
-
-        var response = await _unauthenticatedHttpClient.PostAsync(authorizeUrl, contentParams);
-
-        if (response.StatusCode != HttpStatusCode.OK)
-            throw new Exception("Failed to get Authorization Code. HTTP Status Code: " + response.StatusCode);
-
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        var jsonToken = JToken.Parse(jsonResponse);
-        return jsonToken["code"].ToString();
-    }
-
     private static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret, string? authorizationCode = null)
     {
         FormUrlEncodedContent contentParams;
@@ -103,7 +84,7 @@ public class OdsApiClient : IOdsApiClient
         {
             contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
                 {
-                    new KeyValuePair<string, string>("grant_type", "client_credentials")
+                    new KeyValuePair<string, string>("Grant_type", "client_credentials")
                 });
 
             var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
@@ -121,7 +102,7 @@ public class OdsApiClient : IOdsApiClient
         return jsonToken["access_token"].ToString();
     }
 
-    public async Task<ApiResponse> Get(string authenticationUrl, string clientId, string clientSecret, string resourcesUrl, string getInfo)
+    public async Task<ApiResponse> Get(string authenticationUrl, string clientId, string clientSecret, string odsEndpointUrl, string getInfo)
     {
         await Authenticate(authenticationUrl, clientId, clientSecret);
 
@@ -134,7 +115,7 @@ public class OdsApiClient : IOdsApiClient
             var strContent = new StringContent(string.Empty);
             strContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            response = await AuthenticatedHttpClient.Value.GetAsync(resourcesUrl);
+            response = await AuthenticatedHttpClient.Value.GetAsync(odsEndpointUrl);
             currentAttempt++;
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
