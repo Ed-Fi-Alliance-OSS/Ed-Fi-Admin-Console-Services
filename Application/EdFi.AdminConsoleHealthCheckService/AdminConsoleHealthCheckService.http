@@ -1,6 +1,0 @@
-@AdminConsoleHealthCheckServiceHostAddress = http://localhost:5217
-
-GET {{AdminConsoleHealthCheckServiceHostAddress}}/healthcheck/
-Accept: application/json
-
-###
