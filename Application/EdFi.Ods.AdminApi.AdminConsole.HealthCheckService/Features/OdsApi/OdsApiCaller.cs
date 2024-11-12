@@ -11,7 +11,7 @@ namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
 
 public interface IOdsApiCaller
 {
-    Task<List<OdsApiEndpointNameCount>> ExecuteAsync(AdminApiInstance instance);
+    Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstance instance);
 }
 
 public class OdsApiCaller : IOdsApiCaller
@@ -27,7 +27,7 @@ public class OdsApiCaller : IOdsApiCaller
         _appSettingsOdsApiEndpoints = appSettingsOdsApiEndpoints;
     }
 
-    public async Task<List<OdsApiEndpointNameCount>> ExecuteAsync(AdminApiInstance instance)
+    public async Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstance instance)
     {
         var tasks = new List<Task<OdsApiEndpointNameCount>>();
 
@@ -42,7 +42,7 @@ public class OdsApiCaller : IOdsApiCaller
         return (await Task.WhenAll(tasks)).ToList();
     }
 
-    private async Task<OdsApiEndpointNameCount> GetCountPerEndpointAsync(string odsApiEndpoint, string authUrl, string clientId, string clientSecret, string odsEndpointUrl, string getInfo)
+    protected async Task<OdsApiEndpointNameCount> GetCountPerEndpointAsync(string odsApiEndpoint, string authUrl, string clientId, string clientSecret, string odsEndpointUrl, string getInfo)
     {
         var result = new OdsApiEndpointNameCount()
         {

@@ -5,10 +5,9 @@
 
 using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
+using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Helpers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System.Text.Json.Nodes;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService;
 
@@ -41,36 +40,33 @@ public class Application : IApplication, IHostedService
         }
         else
         {
-            /// Step 2. For each instance, Get the HealthCheck data from ODS API
             foreach (var instance in instances)
             {
+                /// Step 2. For each instance, Get the HealthCheck data from ODS API
                 _logger.LogInformation($"Processing instance with name: {instance.InstanceName}");
-                var healthCheckData = await _odsApiCaller.ExecuteAsync(instance);
+                var healthCheckData = await _odsApiCaller.GetHealthCheckDataAsync(instance);
 
                 _logger.LogInformation("HealCheck data obtained.");
 
-                JsonObject healthCheckDocument = new();
+                var healthCheckDocument = new JsonBuilder().BuildJsonObject(healthCheckData);
 
-                if (healthCheckData != null)
-                {
-                    healthCheckDocument.Add(new KeyValuePair<string, JsonNode?>("healthy", true));
-                    foreach (var countPerEndpoint in healthCheckData)
-                    {
-                        healthCheckDocument.Add(new KeyValuePair<string, JsonNode?>(countPerEndpoint.OdsApiEndpointName, countPerEndpoint.OdsApiEndpointCount));
-                    }
-                }
+                var adminApiHealthCheckPosts = new List<AdminApiHealthCheckPost>();
 
                 /// Step 3. Post the HealthCheck data to the Admin API
-                var healCheckToPost = new AdminApiHealthCheckPost()
+                adminApiHealthCheckPosts.Add(new AdminApiHealthCheckPost()
                 {
                     TenantId = instance.TenantId,
                     InstanceId = instance.InstanceId,
-                    EdOrgId = 1,
+                    EdOrgId = instance.EdOrgId,
                     Document = healthCheckDocument.ToString(),
-                };
+                });
 
                 _logger.LogInformation("Posting HealthCheck data to Admin Api.");
-                await _adminApiCaller.PostHealCheckAsync(healCheckToPost);
+
+                foreach (var healCheckToPost in adminApiHealthCheckPosts)
+                {
+                    await _adminApiCaller.PostHealCheckAsync(healCheckToPost);
+                }
             }
 
             _logger.LogInformation("Process completed.");

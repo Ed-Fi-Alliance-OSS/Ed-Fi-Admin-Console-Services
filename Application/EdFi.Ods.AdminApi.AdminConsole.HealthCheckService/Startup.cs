@@ -9,7 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService;
 
@@ -25,6 +24,10 @@ public static class Startup
         services.Configure<OdsApiSettings>(configuration.GetSection("OdsApiSettings"));
 
         services.AddSingleton<ILogger>(sp => sp.GetService<ILogger<NoLoggingCategoryPlaceHolder>>());
+
+        //services.AddTransient<IAppSettings>(sp => sp.GetService<IOptions<AppSettings>>().Value);
+        //services.AddTransient<IAdminApiSettings>(sp => sp.GetService<IOptions<AdminApiSettings>>().Value);
+        //services.AddTransient<IOdsApiSettings>(sp => sp.GetService<IOptions<OdsApiSettings>>().Value);
 
         services.AddSingleton<IAppSettingsOdsApiEndpoints, AppSettingsOdsApiEndpoints>();
 
