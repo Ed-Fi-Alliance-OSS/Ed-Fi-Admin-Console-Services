@@ -7,6 +7,7 @@ using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.OdsApi;
 using System.Text.Json.Nodes;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Helpers;
+
 public class JsonBuilder
 {
     public JsonObject BuildJsonObject(IEnumerable<OdsApiEndpointNameCount> healthCheckData)

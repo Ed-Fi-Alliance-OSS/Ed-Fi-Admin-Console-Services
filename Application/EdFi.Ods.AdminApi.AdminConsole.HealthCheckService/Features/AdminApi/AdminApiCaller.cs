@@ -12,7 +12,7 @@ namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
 
 public interface IAdminApiCaller
 {
-    Task<IEnumerable<AdminApiInstance>?> GetInstancesAsync();
+    Task<IEnumerable<AdminApiInstance>> GetInstancesAsync();
     Task PostHealCheckAsync(AdminApiHealthCheckPost endpoints);
 }
 
@@ -29,14 +29,16 @@ public class AdminApiCaller : IAdminApiCaller
         _adminApiOptions = adminApiOptions.Value;
     }
 
-    public async Task<IEnumerable<AdminApiInstance>?> GetInstancesAsync()
+    public async Task<IEnumerable<AdminApiInstance>> GetInstancesAsync()
     {
         var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI;
-        var response = await _adminApiClient.Get(instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
+        var response = await _adminApiClient.Get(
+            _adminApiOptions.AccessTokenUrl, _adminApiOptions.ClientId, _adminApiOptions.ClientSecret, instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
 
         if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
         {
-            return JsonConvert.DeserializeObject<IEnumerable<AdminApiInstance>>(response.Content);
+            var instances = JsonConvert.DeserializeObject<IEnumerable<AdminApiInstance>>(response.Content);
+            return instances ?? Enumerable.Empty<AdminApiInstance>();
         }
         return new List<AdminApiInstance>();
     }
@@ -48,7 +50,8 @@ public class AdminApiCaller : IAdminApiCaller
         var json = System.Text.Json.JsonSerializer.Serialize(instanceHealthCheckData);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _adminApiClient.Post(content, healthCheckEndpoint, "Posting HealthCheck to Admin API - Admin Console extension");
+        var response = await _adminApiClient.Post(
+            _adminApiOptions.AccessTokenUrl, _adminApiOptions.ClientId, _adminApiOptions.ClientSecret, content, healthCheckEndpoint, "Posting HealthCheck to Admin API - Admin Console extension");
 
         if (response.StatusCode != System.Net.HttpStatusCode.Created)
         {

@@ -10,13 +10,13 @@ namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.AdminApi;
 
 public class AdminApiClientFake : IAdminApiClient
 {
-    public Task<ApiResponse> Get(string endpointUrl, string getInfo)
+    public Task<ApiResponse> Get(string authenticationUrl, string clientId, string clientSecret, string odsEndpointUrl, string getInfo)
     {
         var response = new ApiResponse(System.Net.HttpStatusCode.OK, Testing.Instances);
         return Task.FromResult(response);
     }
 
-    public Task<ApiResponse> Post(StringContent content, string endpointUrl, string postInfo)
+    public Task<ApiResponse> Post(string authenticationUrl, string clientId, string clientSecret, StringContent content, string endpointUrl, string postInfo)
     {
         throw new NotImplementedException();
     }

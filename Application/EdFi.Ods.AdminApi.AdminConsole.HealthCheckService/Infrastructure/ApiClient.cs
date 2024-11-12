@@ -5,10 +5,8 @@
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Text;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure;
 
@@ -65,25 +63,74 @@ public abstract class ApiClient
         }
     }
 
-    protected static async Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret)
+    protected virtual Task<string> GetAccessToken(string accessTokenUrl, string clientId, string clientSecret)
     {
-        FormUrlEncodedContent contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+        throw new NotImplementedException();
+    }
+
+    public async Task<ApiResponse> Get(string authenticationUrl, string clientId, string clientSecret, string odsEndpointUrl, string getInfo)
+    {
+        await Authenticate(authenticationUrl, clientId, clientSecret);
+
+        const int RetryAttempts = 3;
+        var currentAttempt = 0;
+        HttpResponseMessage response = new HttpResponseMessage();
+
+        while (RetryAttempts > currentAttempt)
+        {
+            var strContent = new StringContent(string.Empty);
+            strContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            response = await AuthenticatedHttpClient.Value.GetAsync(odsEndpointUrl);
+            currentAttempt++;
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                new KeyValuePair<string, string>("Grant_type", "client_credentials")
-            });
+                AccessToken = null;
+                await Authenticate(authenticationUrl, clientId, clientSecret);
+                AuthenticatedHttpClient = new Lazy<HttpClient>(CreateAuthenticatedHttpClient);
+                _logger.LogWarning("GET failed. Reason: {reason}. StatusCode: {status}.", response.ReasonPhrase, response.StatusCode);
+                _logger.LogInformation("Refreshing token and retrying GET request for {info}.", getInfo);
+            }
+            else
+                break;
+        }
 
-        var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
-        _unauthenticatedHttpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret));
+        var responseContent = await response.Content.ReadAsStringAsync();
 
-        var response = await _unauthenticatedHttpClient.PostAsync(accessTokenUrl, contentParams);
+        return new ApiResponse(response.StatusCode, responseContent, response.Headers);
+    }
 
-        if (response.StatusCode != HttpStatusCode.OK)
-            throw new Exception("Failed to get Access Token. HTTP Status Code: " + response.StatusCode);
+    public async Task<ApiResponse> Post(string authenticationUrl, string clientId, string clientSecret, StringContent content, string endpointUrl, string postInfo)
+    {
+        await Authenticate(authenticationUrl, clientId, clientSecret);
 
-        var jsonResult = await response.Content.ReadAsStringAsync();
-        var jsonToken = JToken.Parse(jsonResult);
-        return jsonToken["access_token"].ToString();
+        const int RetryAttempts = 3;
+        var currentAttempt = 0;
+        HttpResponseMessage response = new HttpResponseMessage();
+
+        while (RetryAttempts > currentAttempt)
+        {
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            response = await AuthenticatedHttpClient.Value.PostAsync(endpointUrl, content);
+            currentAttempt++;
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                AccessToken = null;
+                await Authenticate(authenticationUrl, clientId, clientSecret);
+                AuthenticatedHttpClient = new Lazy<HttpClient>(CreateAuthenticatedHttpClient);
+                _logger.LogWarning("POST failed. Reason: {reason}. StatusCode: {status}.", response.ReasonPhrase, response.StatusCode);
+                _logger.LogInformation("Refreshing token and retrying POST request for {info}.", postInfo);
+            }
+            else
+                break;
+        }
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        return new ApiResponse(response.StatusCode, responseContent);
     }
 
     private HttpClientHandler IgnoresCertificateErrorsHandler()

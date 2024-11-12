@@ -8,9 +8,9 @@ using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.AdminApi;
 public class AdminApiCallerFake : IAdminApiCaller
 {
-    public Task<IEnumerable<AdminApiInstance>?> GetInstancesAsync()
+    public Task<IEnumerable<AdminApiInstance>> GetInstancesAsync()
     {
-        return Task.FromResult(Testing.AdminApiInstances?.AsEnumerable());
+        return Task.FromResult(Testing.AdminApiInstances.AsEnumerable());
     }
 
     public Task PostHealCheckAsync(AdminApiHealthCheckPost endpoints)
