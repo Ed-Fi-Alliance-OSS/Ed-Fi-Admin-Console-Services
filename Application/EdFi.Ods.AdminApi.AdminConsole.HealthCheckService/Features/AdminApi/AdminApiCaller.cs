@@ -6,6 +6,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Serilog.Core;
 using System.Text;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
@@ -31,16 +32,23 @@ public class AdminApiCaller : IAdminApiCaller
 
     public async Task<IEnumerable<AdminApiInstance>> GetInstancesAsync()
     {
-        var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI;
-        var response = await _adminApiClient.Get(
-            _adminApiOptions.AccessTokenUrl, _adminApiOptions.ClientId, _adminApiOptions.ClientSecret, instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
-
-        if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
+        if (IsAdminApiSettingsValid())
         {
-            var instances = JsonConvert.DeserializeObject<IEnumerable<AdminApiInstance>>(response.Content);
-            return instances ?? Enumerable.Empty<AdminApiInstance>();
+            var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI;
+            var response = await _adminApiClient.Get(
+                _adminApiOptions.AccessTokenUrl, _adminApiOptions.ClientId, _adminApiOptions.ClientSecret, instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
+            {
+                var instances = JsonConvert.DeserializeObject<IEnumerable<AdminApiInstance>>(response.Content);
+                return instances ?? Enumerable.Empty<AdminApiInstance>();
+            }
+            return new List<AdminApiInstance>();
         }
-        return new List<AdminApiInstance>();
+        else {
+            _logger.LogError("AdminApi Settings has not been set properly.");
+            return new List<AdminApiInstance>(); 
+        }
     }
 
     public async Task PostHealCheckAsync(AdminApiHealthCheckPost instanceHealthCheckData)
@@ -55,7 +63,20 @@ public class AdminApiCaller : IAdminApiCaller
 
         if (response.StatusCode != System.Net.HttpStatusCode.Created)
         {
-            _logger.LogError($"Not able to post HealthCheck data to Ods Api. Tenant Id: {instanceHealthCheckData.TenantId}");
+            _logger.LogError($"Not able to post HealthCheck data to Ods Api. Tenant Id: {instanceHealthCheckData.TenantId}.");
+            _logger.LogError($"Status Code returned is: {response.StatusCode}.");
         }
+    }
+
+    private bool IsAdminApiSettingsValid()
+    {
+        if (string.IsNullOrEmpty(_adminApiOptions.AccessTokenUrl)
+            || string.IsNullOrEmpty(_adminApiOptions.ApiUrl)
+            || string.IsNullOrEmpty(_adminApiOptions.ClientId)
+            || string.IsNullOrEmpty(_adminApiOptions.ClientSecret)
+            || string.IsNullOrEmpty(_adminApiOptions.AdminConsoleInstancesURI)
+            || string.IsNullOrEmpty(_adminApiOptions.AdminConsoleHealthCheckURI))
+        { return false; }
+        else { return true; }
     }
 }

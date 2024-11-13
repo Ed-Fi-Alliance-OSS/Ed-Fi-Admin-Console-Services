@@ -55,23 +55,18 @@ public class Application : IApplication, IHostedService
 
                         var healthCheckDocument = JsonBuilder.BuildJsonObject(healthCheckData);
 
-                        var adminApiHealthCheckPosts = new List<AdminApiHealthCheckPost>();
-
                         /// Step 3. Post the HealthCheck data to the Admin API
-                        adminApiHealthCheckPosts.Add(new AdminApiHealthCheckPost()
+                        var healCheckPayload = new AdminApiHealthCheckPost()
                         {
                             TenantId = instance.TenantId,
                             InstanceId = instance.InstanceId,
                             EdOrgId = instance.EdOrgId,
                             Document = healthCheckDocument.ToString(),
-                        });
+                        };
 
                         _logger.LogInformation("Posting HealthCheck data to Admin Api.");
 
-                        foreach (var healCheckToPost in adminApiHealthCheckPosts)
-                        {
-                            await _adminApiCaller.PostHealCheckAsync(healCheckToPost);
-                        }
+                        await _adminApiCaller.PostHealCheckAsync(healCheckPayload);
                     }
                     else
                     {

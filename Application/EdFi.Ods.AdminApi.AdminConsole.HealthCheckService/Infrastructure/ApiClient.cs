@@ -12,7 +12,7 @@ namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Infrastructure;
 
 public abstract class ApiClient
 {
-    protected static HttpClient _unauthenticatedHttpClient = new();
+    protected static HttpClient? _unauthenticatedHttpClient;
     protected readonly ILogger _logger;
     protected readonly IOptions<AppSettings> _options;
 
