@@ -43,29 +43,40 @@ public class Application : IApplication, IHostedService
             foreach (var instance in instances)
             {
                 /// Step 2. For each instance, Get the HealthCheck data from ODS API
-                _logger.LogInformation($"Processing instance with name: {instance.InstanceName}");
-                var healthCheckData = await _odsApiCaller.GetHealthCheckDataAsync(instance);
+                _logger.LogInformation($"Processing instance with name: {instance.InstanceName ?? "<No Name>"}");
 
-                _logger.LogInformation("HealCheck data obtained.");
-
-                var healthCheckDocument = new JsonBuilder().BuildJsonObject(healthCheckData);
-
-                var adminApiHealthCheckPosts = new List<AdminApiHealthCheckPost>();
-
-                /// Step 3. Post the HealthCheck data to the Admin API
-                adminApiHealthCheckPosts.Add(new AdminApiHealthCheckPost()
+                if (InstanceValidator.IsInstanceValid(_logger, instance))
                 {
-                    TenantId = instance.TenantId,
-                    InstanceId = instance.InstanceId,
-                    EdOrgId = instance.EdOrgId,
-                    Document = healthCheckDocument.ToString(),
-                });
+                    var healthCheckData = await _odsApiCaller.GetHealthCheckDataAsync(instance);
 
-                _logger.LogInformation("Posting HealthCheck data to Admin Api.");
+                    if (healthCheckData != null && healthCheckData.Count > 0)
+                    {
+                        _logger.LogInformation("HealCheck data obtained.");
 
-                foreach (var healCheckToPost in adminApiHealthCheckPosts)
-                {
-                    await _adminApiCaller.PostHealCheckAsync(healCheckToPost);
+                        var healthCheckDocument = JsonBuilder.BuildJsonObject(healthCheckData);
+
+                        var adminApiHealthCheckPosts = new List<AdminApiHealthCheckPost>();
+
+                        /// Step 3. Post the HealthCheck data to the Admin API
+                        adminApiHealthCheckPosts.Add(new AdminApiHealthCheckPost()
+                        {
+                            TenantId = instance.TenantId,
+                            InstanceId = instance.InstanceId,
+                            EdOrgId = instance.EdOrgId,
+                            Document = healthCheckDocument.ToString(),
+                        });
+
+                        _logger.LogInformation("Posting HealthCheck data to Admin Api.");
+
+                        foreach (var healCheckToPost in adminApiHealthCheckPosts)
+                        {
+                            await _adminApiCaller.PostHealCheckAsync(healCheckToPost);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"No HealthCheck data has been collected for instance with name: {instance.InstanceName}");
+                    }
                 }
             }
 

@@ -4,6 +4,9 @@
 // See the LICENSE and NOTICES files in the project root for more information.
 
 using EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Features.AdminApi;
+using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
+using FakeItEasy;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Shouldly;
 
@@ -12,14 +15,16 @@ namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.AdminApi;
 [TestFixture]
 public class AdminApiCallerTests
 {
+    private ILogger<InstanceValidatorTests> _logger;
     private IAdminApiClient _fakeAdminApiClient;
     private AdminApiCaller _adminApiCaller;
 
     [SetUp]
     public void SetUp()
     {
+        _logger = A.Fake<ILogger<InstanceValidatorTests>>();
         _fakeAdminApiClient = new AdminApiClientFake();
-        _adminApiCaller = new AdminApiCaller(null, _fakeAdminApiClient, Testing.GetAdminApiSettings());
+        _adminApiCaller = new AdminApiCaller(_logger, _fakeAdminApiClient, Testing.GetAdminApiSettings());
     }
 
     [Test]

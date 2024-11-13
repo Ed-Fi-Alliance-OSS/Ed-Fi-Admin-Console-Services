@@ -82,6 +82,9 @@ The data required is the following.
 
 |Setting|Description|
 |---|---|
+|TenantId|Tenant identifier|
+|InstanceId|Instance identifier|
+|InstanceName|Instance name|
 |BaseUrl|Example: https://api.ed-fi.org/v7.1/api/|
 |ResourcesUrl|Example: https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/|
 |AuthenticationUrl|Example: https://api.ed-fi.org/v7.1/api/oauth/token/|

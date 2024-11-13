@@ -8,9 +8,9 @@ using System.Text.Json.Nodes;
 
 namespace EdFi.Ods.AdminApi.AdminConsole.HealthCheckService.Helpers;
 
-public class JsonBuilder
+public static class JsonBuilder
 {
-    public JsonObject BuildJsonObject(IEnumerable<OdsApiEndpointNameCount> healthCheckData)
+    public static JsonObject BuildJsonObject(IEnumerable<OdsApiEndpointNameCount> healthCheckData)
     {
         JsonObject healthCheckDocument = new();
 

@@ -55,7 +55,7 @@ public class AdminApiCaller : IAdminApiCaller
 
         if (response.StatusCode != System.Net.HttpStatusCode.Created)
         {
-            _logger.LogError("");
+            _logger.LogError($"Not able to post HealthCheck data to Ods Api. Tenant Id: {instanceHealthCheckData.TenantId}");
         }
     }
 }
