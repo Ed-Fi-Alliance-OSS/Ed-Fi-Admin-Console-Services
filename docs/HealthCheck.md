@@ -11,33 +11,91 @@
 - Clone [this
   repository](https://github.com/Ed-Fi-Alliance-OSS/Ed-Fi-Admin-Console-Services.git) locally
 
+## Application Flow
+
+The application executes 3 main steps.
+
+1. Get instances data from `Admin Api - Admin Console extension`.
+2. For each instances returned from `Admin Api - Admin Console extension`, and based on the Endpoints set on the `appsettings.json` call the Ods Api to collect the data necessary to generate the HealthCheck payload.
+3. Call the HealthCheck endpoint on the `Admin Api - Admin Console extension` to send the payload generated. 
+
+![Application flow](AdminConsoleHealthCheckProcessDiagram.png)
+
 ## Project Initial Configuration
 
-This project depends on AdminAPI, so it will be require to provide the information at `Application/AdminConsoleHealthCheckService/appsettings.json`, where you can find the section `AdminApiSettings`. Following you can find an example configuration for this section: 
+This project depends on AdminAPI, so it will be require to provide the information at `Application/EdFi.Ods.AdminApi.AdminConsole.HealthCheckService/appsettings.json`.
+It will also make requests to the Ods Api based on the information returned from the `Admin Api - Admin Console extension` on the `instances` endpoint.
+Following you can find an example:
 
 ```json
-"AdminApiSettings": {
-    "HealthCheckUrl": "https://localhost/adminconsole/healthcheck",
-    "TokenUrl": "https://localhost/connect/token",
-    "ClientId": "[Your_Client_Id]",
-    "ClientSecret": "[Your_Client_Secret]",
-    "GrantType": "client_credentials",
-    "Scope": "edfi_admin_api/full_access"
+{
+  "AppSettings": {
+    "IgnoresCertificateErrors": false
+  },
+  "AdminApiSettings": {
+    "ApiUrl": "api url",
+    "AdminConsoleInstancesURI": "/adminconsole/instances",
+    "AdminConsoleHealthCheckURI": "/adminconsole/healthcheck",
+    "AccessTokenUrl": "token url",
+    "ClientId": "",
+    "ClientSecret": ""
+  },
+  "OdsApiSettings": {
+    "Endpoints": [
+      "studentSpecialEducationProgramAssociations",
+      "studentDisciplineIncidentBehaviorAssociations",
+      "studentSchoolAssociations",
+      "studentSchoolAttendanceEvents",
+      "studentSectionAssociations",
+      "staffEducationOrganizationAssignmentAssociations",
+      "staffSectionAssociations",
+      "courseTranscripts",
+      "sections"
+    ]
+  }
 }
 ```
 
+### AppSettings
+
+|Setting|Description|
+|---|---|
+|IgnoresCertificateErrors|Set this on `True` to bypass the SSL validations on the http connection to the Admin Api and Ods Api|
+
+Make sure it is set to `False` on a production environment. 
+
+### AdminApiSettings
+
+Contains all the necessary information to get connected to the Admin Api. 
+
+### OdsApiSettings
+
+|Setting|Description|
+|---|---|
+|Endpoints|List of Ods Api endpoints to be called for building the HealthCheck payload|
+
+## Requests to the Ods Api
+
+Based on the information returned from the instances endpoint on the `Admin Api - Admin Console extension` this application will be making calls to the Ods Api in order to be able to generate the `HealthCheck` payload.
+This means, the information such as Urls, credentials, etc. must be part of the instance information. If the instance data is incorrect or is not properly formed, this application wont be able to generate the `HealthCheck` payload.
+The data required is the following.
+
+|Setting|Description|
+|---|---|
+|BaseUrl|Example: https://api.ed-fi.org/v7.1/api/|
+|ResourcesUrl|Example: https://api.ed-fi.org:443/v7.1/api/data/v3/ed-fi/|
+|AuthenticationUrl|Example: https://api.ed-fi.org/v7.1/api/oauth/token/|
+|ClientId|`ClientId`|
+|ClientSecret|`ClientSecret`|
+
 ## Launch the project
 
-If you want to launch Health Check service, you can open your terminal and redirect it to the directory `/Application/AdminConsoleHealthCheckService/appsettings.json`, then run the command `dotnet run`
+Since this is a Console Application, it can be executed from a terminal. Review the `Application flow` section for more information. 
 
-If you enabled swagger at `appSettings.json`, then you will be able to access `[Your_URL]/swagger`
+## Build the project on a docker image
 
-
-## Launch the project with docker
-
-In case you want to run the project from docker, you can run the next commands `from the repository main folder`
+In case you want to build the project on a docker image, , you can run the next commands `from the repository main folder`
 
 ```bash
 docker build -f Docker/healthcheck.Dockerfile -t healthcheckservice .
-docker run -d -p 38080:8080 --name healthcheckservice healthcheckservice
 ```
