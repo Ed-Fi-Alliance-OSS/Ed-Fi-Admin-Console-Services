@@ -23,7 +23,7 @@ The application executes 3 main steps.
 
 ## Project Initial Configuration
 
-This project depends on AdminAPI, so it will be require to provide the information at `Application/EdFi.Ods.AdminApi.AdminConsole.HealthCheckService/appsettings.json`.
+This project depends on AdminAPI, so it will be require to provide the information at `Application/EdFi.AdminConsole.HealthCheckService/appsettings.json`.
 It will also make requests to the Ods Api based on the information returned from the `Admin Api - Admin Console extension` on the `instances` endpoint.
 Following you can find an example:
 
