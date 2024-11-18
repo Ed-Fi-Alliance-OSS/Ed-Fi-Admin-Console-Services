@@ -8,7 +8,7 @@ using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.AdminApi;
 public class AdminApiCallerFake : IAdminApiCaller
 {
-    public Task<IEnumerable<AdminApiInstance>> GetInstancesAsync()
+    public Task<IEnumerable<AdminApiInstanceDocument>> GetInstancesAsync()
     {
         return Task.FromResult(Testing.AdminApiInstances.AsEnumerable());
     }

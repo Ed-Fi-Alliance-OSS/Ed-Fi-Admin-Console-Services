@@ -66,13 +66,13 @@ public class Testing
             };
         }
     }
-    public static List<AdminApiInstance> AdminApiInstances
+    public static List<AdminApiInstanceDocument> AdminApiInstances
     {
         get
         {
-            return new List<AdminApiInstance>
+            return new List<AdminApiInstanceDocument>
             {
-                new AdminApiInstance()
+                new AdminApiInstanceDocument()
                 {
                     InstanceId = 1,
                     TenantId = 1,
@@ -83,7 +83,7 @@ public class Testing
                     AuthenticationUrl = "one auth url",
                     ResourcesUrl = "one resourse url",
                 },
-                new AdminApiInstance()
+                new AdminApiInstanceDocument()
                 {
                     InstanceId = 2,
                     TenantId = 2,

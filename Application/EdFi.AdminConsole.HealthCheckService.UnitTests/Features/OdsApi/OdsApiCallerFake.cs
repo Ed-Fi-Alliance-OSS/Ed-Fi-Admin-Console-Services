@@ -9,7 +9,7 @@ using EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.OdsApi;
 public class OdsApiCallerFake : IOdsApiCaller
 {
-    public Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstance instance)
+    public Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstanceDocument instance)
     {
         return Task.FromResult(Testing.HealthCheckData);
     }

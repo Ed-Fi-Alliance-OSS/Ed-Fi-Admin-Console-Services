@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 // Licensed to the Ed-Fi Alliance under one or more agreements.
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
@@ -13,7 +13,7 @@ namespace EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 
 public interface IAdminApiCaller
 {
-    Task<IEnumerable<AdminApiInstance>> GetInstancesAsync();
+    Task<IEnumerable<AdminApiInstanceDocument>> GetInstancesAsync();
     Task PostHealCheckAsync(AdminApiHealthCheckPost endpoints);
 }
 
@@ -30,7 +30,7 @@ public class AdminApiCaller : IAdminApiCaller
         _adminApiOptions = adminApiOptions.Value;
     }
 
-    public async Task<IEnumerable<AdminApiInstance>> GetInstancesAsync()
+    public async Task<IEnumerable<AdminApiInstanceDocument>> GetInstancesAsync()
     {
         if (IsAdminApiSettingsValid())
         {
@@ -41,13 +41,16 @@ public class AdminApiCaller : IAdminApiCaller
             if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
             {
                 var instances = JsonConvert.DeserializeObject<IEnumerable<AdminApiInstance>>(response.Content);
-                return instances ?? Enumerable.Empty<AdminApiInstance>();
+                if (instances != null)
+                {
+                    return instances.Select(i => i.Document) ?? Enumerable.Empty<AdminApiInstanceDocument>();
+                }
             }
-            return new List<AdminApiInstance>();
+            return new List<AdminApiInstanceDocument>();
         }
         else {
             _logger.LogError("AdminApi Settings has not been set properly.");
-            return new List<AdminApiInstance>(); 
+            return new List<AdminApiInstanceDocument>();
         }
     }
 

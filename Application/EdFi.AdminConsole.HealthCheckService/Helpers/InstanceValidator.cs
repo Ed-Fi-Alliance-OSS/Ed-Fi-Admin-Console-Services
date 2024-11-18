@@ -10,7 +10,7 @@ namespace EdFi.AdminConsole.HealthCheckService.Helpers;
 
 public static class InstanceValidator
 {
-    public static bool IsInstanceValid(ILogger logger, AdminApiInstance instance)
+    public static bool IsInstanceValid(ILogger logger, AdminApiInstanceDocument instance)
     {
         var messages = new List<string>();
 

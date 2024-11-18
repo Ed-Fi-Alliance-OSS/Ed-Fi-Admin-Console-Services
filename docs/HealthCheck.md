@@ -95,10 +95,19 @@ The data required is the following.
 
 Since this is a Console Application, it can be executed from a terminal. Review the `Application flow` section for more information. 
 
-## Build the project on a docker image
+## Build and run the application on Docker container
 
-In case you want to build the project on a docker image, , you can run the next commands `from the repository main folder`
+In order to be able to execute the application on a docker container we need to build it first.
+Execute the following command on a terminal `from the repository main folder`
 
 ```bash
-docker build -f Docker/healthcheck.Dockerfile -t healthcheckservice .
+docker build -f Docker/healthcheck.Dockerfile -t edfi.adminconsole.healthcheckservice .
 ```
+
+Once the Docker image has been built, we can execute the following command to run the application.
+
+```bash
+docker run -it edfi.adminconsole.healthcheckservice
+```
+
+In case you want the container to be removed automatically once the application has completed its execution, include the `--rm` parameter. 

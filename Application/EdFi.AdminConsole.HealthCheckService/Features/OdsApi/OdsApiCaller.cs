@@ -11,7 +11,7 @@ namespace EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
 
 public interface IOdsApiCaller
 {
-    Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstance instance);
+    Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstanceDocument instance);
 }
 
 public class OdsApiCaller : IOdsApiCaller
@@ -27,7 +27,7 @@ public class OdsApiCaller : IOdsApiCaller
         _appSettingsOdsApiEndpoints = appSettingsOdsApiEndpoints;
     }
 
-    public async Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstance instance)
+    public async Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstanceDocument instance)
     {
         var tasks = new List<Task<OdsApiEndpointNameCount>>();
 

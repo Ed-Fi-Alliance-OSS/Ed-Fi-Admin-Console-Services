@@ -15,7 +15,7 @@ namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
 [TestFixture]
 public class InstanceValidatorTests
 {
-    private AdminApiInstance _instance = new AdminApiInstance();
+    private AdminApiInstanceDocument _instance = new AdminApiInstanceDocument();
     private ILogger<InstanceValidatorTests> _logger;
 
     [SetUp]
