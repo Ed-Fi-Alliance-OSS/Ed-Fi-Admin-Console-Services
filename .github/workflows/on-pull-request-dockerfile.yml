@@ -38,13 +38,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Copy application folder to docker context
-        if: ${{ matrix.dockerfile.type == 'local' }}
-        run: |
-          mkdir Docker/Application
-          cp -r ./Application/EdFi.AdminConsole.HealthCheckService ./Docker/Application
-          cp ./Application/NuGet.Config ./Docker/Application
-
       - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         name: Run Linter on ${{ matrix.dockerfile.name }} Dockerfile
         with:
@@ -59,12 +52,7 @@ jobs:
 
       - name: Build
         run: |
-          path=${{matrix.dockerfile.path}}
-          folder=${path%/*}
-          cd $folder
-          dockerfile=$(echo ${{matrix.dockerfile.path}} | awk -F"/" '{print $NF}')
-
-          docker build -f $dockerfile -t ${{ matrix.dockerfile.name }} --build-arg="pre" .
+          docker build -f ${{matrix.dockerfile.path}} -t ${{ matrix.dockerfile.name }} --build-arg="pre" .
 
       - name: Analyze
         uses: docker/scout-action@67eb1afe777307506aaecb9acd9a0e0389cb99ae # v1.5.0
