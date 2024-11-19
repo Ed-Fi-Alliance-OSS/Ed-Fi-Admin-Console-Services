@@ -8,14 +8,12 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /source
 
 # Copy source code and compile the application
-COPY ../Application/EdFi.AdminConsole.HealthCheckService/. ./EdFi.AdminConsole.HealthCheckService/
+COPY Application/EdFi.AdminConsole.HealthCheckService/. ./EdFi.AdminConsole.HealthCheckService/
 WORKDIR /source/EdFi.AdminConsole.HealthCheckService
 
-# Restore dependencies
-RUN dotnet restore
-
-# Build and publish a release
-RUN dotnet publish -c Release -o /app
+# Restore dependencies, Then build and publish release
+RUN dotnet restore &&\
+    dotnet publish -c Release -o /app
 
 # .NET Runtime image to execute the application
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

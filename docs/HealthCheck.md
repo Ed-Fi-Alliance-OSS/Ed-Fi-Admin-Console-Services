@@ -101,7 +101,7 @@ In order to be able to execute the application on a docker container we need to 
 Execute the following command on a terminal `from the repository main folder`
 
 ```bash
-docker build -f Docker/healthcheck.Dockerfile -t edfi.adminconsole.healthcheckservice .
+docker build -f Docker/Dockerfile -t edfi.adminconsole.healthcheckservice .
 ```
 
 Once the Docker image has been built, we can execute the following command to run the application.
