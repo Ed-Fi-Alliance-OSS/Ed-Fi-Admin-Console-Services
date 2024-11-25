@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EdFi.AdminConsole.HealthCheckService": {
+      "commandName": "Project",
+      "commandLineArgs": "--isMultiTenant=false --tenant=\"Tenant1\" --clientId=\"a1\" --ClientSecret=\"Gapuser1234*Gapuser1234*Gapuser1234*Gapuser1234*\""
+    }
+  }
+}

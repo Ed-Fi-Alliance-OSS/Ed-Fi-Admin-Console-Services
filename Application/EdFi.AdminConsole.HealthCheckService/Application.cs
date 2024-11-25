@@ -6,6 +6,7 @@
 using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
 using EdFi.AdminConsole.HealthCheckService.Helpers;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -18,12 +19,14 @@ public interface IApplication
 
 public class Application : IApplication, IHostedService
 {
+    private IConfiguration _configuration;
     private readonly ILogger _logger;
     private readonly IAdminApiCaller _adminApiCaller;
     private readonly IOdsApiCaller _odsApiCaller;
 
-    public Application(ILogger logger, IAdminApiCaller adminApiCaller, IOdsApiCaller odsApiCaller)
+    public Application(AdminApiClient myService, IConfiguration configuration, ILogger logger, IAdminApiCaller adminApiCaller, IOdsApiCaller odsApiCaller)
     {
+        _configuration = configuration;
         _logger = logger;
         _adminApiCaller = adminApiCaller;
         _odsApiCaller = odsApiCaller;

@@ -1,11 +1,13 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 // Licensed to the Ed-Fi Alliance under one or more agreements.
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using EdFi.AdminConsole.HealthCheckService.Features;
 using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
 using FakeItEasy;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Shouldly;
@@ -17,14 +19,18 @@ public class AdminApiCallerTests
 {
     private ILogger<InstanceValidatorTests> _logger;
     private IAdminApiClient _fakeAdminApiClient;
-    private AdminApiCaller _adminApiCaller;
+    private IAdminApiCaller _adminApiCaller;
 
     [SetUp]
     public void SetUp()
     {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(Testing.CommandArgsDic)
+            .Build();
+
         _logger = A.Fake<ILogger<InstanceValidatorTests>>();
         _fakeAdminApiClient = new AdminApiClientFake();
-        _adminApiCaller = new AdminApiCaller(_logger, _fakeAdminApiClient, Testing.GetAdminApiSettings());
+        _adminApiCaller = new AdminApiCaller(_logger, _fakeAdminApiClient, Testing.GetAdminApiSettings(), new CommandArgs(configuration));
     }
 
     [Test]

@@ -3,11 +3,10 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Serilog.Core;
-using System.Text;
 
 namespace EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 
@@ -21,13 +20,15 @@ public class AdminApiCaller : IAdminApiCaller
 {
     private readonly ILogger _logger;
     private IAdminApiClient _adminApiClient;
-    private readonly AdminApiSettings _adminApiOptions;
+    private readonly IAdminApiSettings _adminApiOptions;
+    private readonly ICommandArgs _commandArgs;
 
-    public AdminApiCaller(ILogger logger, IAdminApiClient adminApiClient, IOptions<AdminApiSettings> adminApiOptions)
+    public AdminApiCaller(ILogger logger, IAdminApiClient adminApiClient, IOptions<AdminApiSettings> adminApiOptions, ICommandArgs commandArgs)
     {
         _logger = logger;
         _adminApiClient = adminApiClient;
         _adminApiOptions = adminApiOptions.Value;
+        _commandArgs = commandArgs;
     }
 
     public async Task<IEnumerable<AdminApiInstanceDocument>> GetInstancesAsync()
@@ -35,8 +36,7 @@ public class AdminApiCaller : IAdminApiCaller
         if (IsAdminApiSettingsValid())
         {
             var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI;
-            var response = await _adminApiClient.Get(
-                _adminApiOptions.AccessTokenUrl, _adminApiOptions.ClientId, _adminApiOptions.ClientSecret, instancesEndpoint, "Getting instances from Admin API - Admin Console extension");
+            var response = await _adminApiClient.AdminApiGet("Getting instances from Admin API - Admin Console extension");
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(response.Content))
             {
@@ -48,7 +48,8 @@ public class AdminApiCaller : IAdminApiCaller
             }
             return new List<AdminApiInstanceDocument>();
         }
-        else {
+        else
+        {
             _logger.LogError("AdminApi Settings has not been set properly.");
             return new List<AdminApiInstanceDocument>();
         }
@@ -58,11 +59,10 @@ public class AdminApiCaller : IAdminApiCaller
     {
         var healthCheckEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleHealthCheckURI;
 
-        var json = System.Text.Json.JsonSerializer.Serialize(instanceHealthCheckData);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var instanceHealthCheckDataJson = System.Text.Json.JsonSerializer.Serialize(instanceHealthCheckData);
+        var instanceHealthCheckDataContent = new StringContent(instanceHealthCheckDataJson, Encoding.UTF8, "application/json");
 
-        var response = await _adminApiClient.Post(
-            _adminApiOptions.AccessTokenUrl, _adminApiOptions.ClientId, _adminApiOptions.ClientSecret, content, healthCheckEndpoint, "Posting HealthCheck to Admin API - Admin Console extension");
+        var response = await _adminApiClient.AdminApiPost(instanceHealthCheckDataContent, "Posting HealthCheck to Admin API - Admin Console extension");
 
         if (response.StatusCode != System.Net.HttpStatusCode.Created)
         {
@@ -75,11 +75,13 @@ public class AdminApiCaller : IAdminApiCaller
     {
         if (string.IsNullOrEmpty(_adminApiOptions.AccessTokenUrl)
             || string.IsNullOrEmpty(_adminApiOptions.ApiUrl)
-            || string.IsNullOrEmpty(_adminApiOptions.ClientId)
-            || string.IsNullOrEmpty(_adminApiOptions.ClientSecret)
             || string.IsNullOrEmpty(_adminApiOptions.AdminConsoleInstancesURI)
-            || string.IsNullOrEmpty(_adminApiOptions.AdminConsoleHealthCheckURI))
+            || string.IsNullOrEmpty(_adminApiOptions.AdminConsoleHealthCheckURI)
+            || string.IsNullOrEmpty(_commandArgs.ClientId)
+            || string.IsNullOrEmpty(_commandArgs.ClientSecret)
+            )
         { return false; }
-        else { return true; }
+        else
+        { return true; }
     }
 }

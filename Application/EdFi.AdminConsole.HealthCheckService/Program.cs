@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 // Licensed to the Ed-Fi Alliance under one or more agreements.
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
@@ -6,6 +6,7 @@
 using EdFi.AdminConsole.HealthCheckService;
 using EdFi.AdminConsole.HealthCheckService.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -67,7 +68,7 @@ public class Program
         var runPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
         var loggingConfigFile = Path.Combine(runPath ?? "./", "logging.json");
         var env = context.HostingEnvironment;
-        config.Sources.Clear();
+        //config.Sources.Clear();
 
         config.AddJsonFile(loggingConfigFile, optional: false)
               .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)

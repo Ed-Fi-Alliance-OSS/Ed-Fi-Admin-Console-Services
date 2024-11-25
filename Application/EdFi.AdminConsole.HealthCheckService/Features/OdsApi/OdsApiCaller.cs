@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 // Licensed to the Ed-Fi Alliance under one or more agreements.
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
@@ -48,7 +48,7 @@ public class OdsApiCaller : IOdsApiCaller
         {
             OdsApiEndpointName = odsApiEndpoint,
         };
-        var response = await _odsApiClient.Get(authUrl, clientId, clientSecret, odsEndpointUrl, getInfo);
+        var response = await _odsApiClient.OdsApiGet(authUrl, clientId, clientSecret, odsEndpointUrl, getInfo);
 
         if (response != null && response.StatusCode == System.Net.HttpStatusCode.OK && response.Headers != null && response.Headers.Contains("total-count"))
             result.OdsApiEndpointCount = int.Parse(response.Headers.GetValues("total-count").First());
