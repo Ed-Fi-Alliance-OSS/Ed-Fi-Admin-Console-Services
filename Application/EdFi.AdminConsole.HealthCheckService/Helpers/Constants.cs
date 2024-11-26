@@ -8,5 +8,9 @@ namespace EdFi.AdminConsole.HealthCheckService.Helpers
     public struct Constants
     {
         public const string OdsApiQueryParams = "?offset=0&limit=0&totalCount=true";
+
+        public const string TotalCountHeader = "total-count";
+
+        public const string TenantHeader = "tenant";
     }
 }

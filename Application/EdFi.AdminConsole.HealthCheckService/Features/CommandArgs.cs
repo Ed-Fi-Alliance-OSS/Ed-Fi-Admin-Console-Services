@@ -3,6 +3,8 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using System.Reflection.Metadata;
+using EdFi.AdminConsole.HealthCheckService.Helpers;
 using Microsoft.Extensions.Configuration;
 
 namespace EdFi.AdminConsole.HealthCheckService.Features;
@@ -26,7 +28,7 @@ public class CommandArgs : ICommandArgs
 
     public bool IsMultiTenant { get => bool.Parse(_configuration["isMultiTenant"] ?? "false"); }
 
-    public string Tenant { get => _configuration["tenant"] ?? string.Empty; }
+    public string Tenant { get => _configuration[Constants.TenantHeader] ?? string.Empty; }
 
     public string ClientId { get => _configuration["clientid"] ?? string.Empty; }
 

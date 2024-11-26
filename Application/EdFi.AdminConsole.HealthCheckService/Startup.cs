@@ -29,6 +29,8 @@ public static class Startup
         services.AddSingleton<IAppSettingsOdsApiEndpoints, AppSettingsOdsApiEndpoints>();
         services.AddSingleton<ICommandArgs, CommandArgs>();
 
+        services.AddTransient<IHttpRequestMessageBuilder, HttpRequestMessageBuilder>();
+
         services.AddTransient<IAdminApiClient, AdminApiClient>();
         services.AddTransient<IOdsApiClient, OdsApiClient>();
 
@@ -48,7 +50,7 @@ public static class Startup
         .ConfigurePrimaryHttpMessageHandler(() =>
         {
             var handler = new HttpClientHandler();
-            if (configuration.GetSection("AppSettings")["IgnoresCertificateErrors"] == "true")
+            if (configuration.GetSection("AppSettings")["IgnoresCertificateErrors"].ToLower() == "true")
             {
                 return IgnoresCertificateErrorsHandler();
             }

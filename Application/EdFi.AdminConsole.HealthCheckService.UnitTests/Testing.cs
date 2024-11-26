@@ -50,17 +50,17 @@ public class Testing
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "firstEndPoint",
-                    OdsApiEndpointCount = 13
+                    OdsApiEndpointCount = 3
                 },
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "secondEndpoint",
-                    OdsApiEndpointCount = 14
+                    OdsApiEndpointCount = 8
                 },
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "thirdEndPoint",
-                    OdsApiEndpointCount = 13
+                    OdsApiEndpointCount = 5
                 }
             };
         }
@@ -79,9 +79,9 @@ public class Testing
                     InstanceName = "instance 1",
                     ClientId = "one client",
                     ClientSecret = "one secret",
-                    BaseUrl = "one base url",
-                    AuthenticationUrl = "one auth url",
-                    ResourcesUrl = "one resourse url",
+                    BaseUrl = "http://www.myserver.com",
+                    AuthenticationUrl = "/connect/token",
+                    ResourcesUrl = "/data/v3/ed-fi/",
                 },
                 new AdminApiInstanceDocument()
                 {
@@ -90,9 +90,9 @@ public class Testing
                     InstanceName = "instance 2",
                     ClientId = "another client",
                     ClientSecret = "another secret",
-                    BaseUrl = "another base url",
-                    AuthenticationUrl = "another auth url",
-                    ResourcesUrl = "another resourse url",
+                    BaseUrl = "http://www.otherserver.com",
+                    AuthenticationUrl = "/connect/token",
+                    ResourcesUrl = "/data/v3/ed-fi/",
                 }
             };
         }
@@ -106,9 +106,9 @@ public class Testing
               ""instanceName"": ""instance 1"",
               ""clientId"": ""one client"",
               ""clientSecret"": ""one secret"",
-              ""baseUrl"": ""one base url"",
-              ""resourcesUrl"": ""one resourse url"",
-              ""authenticationUrl"": ""one auth url""
+              ""baseUrl"": ""http://www.myserver.com"",
+              ""resourcesUrl"": ""/data/v3/ed-fi/"",
+              ""authenticationUrl"": ""/connect/token""
         }},{
         ""Document"":{
             ""instanceId"": 2,
@@ -116,16 +116,24 @@ public class Testing
               ""instanceName"": ""instance 2"",
               ""clientId"": ""another client"",
               ""clientSecret"": ""another secret"",
-              ""baseUrl"": ""another base url"",
-              ""resourcesUrl"": ""another resourse url"",
-              ""authenticationUrl"": ""another auth url""
+              ""baseUrl"": ""http://www.otherserver.com"",
+              ""resourcesUrl"": ""/data/v3/ed-fi/"",
+              ""authenticationUrl"": ""/connect/token""
         }
     }]";
 
 
-    public static Dictionary<string, string> CommandArgsDic = new Dictionary<string, string>
+    public static Dictionary<string, string> CommandArgsDicWithMultitenant = new Dictionary<string, string>
         {
+            {"isMultiTenant", "true"},
             {"tenant", "Tenant1"},
+            {"clientid", "SomeClientId"},
+            {"clientsecret", "SomeClientSecret"}
+        };
+
+    public static Dictionary<string, string> CommandArgsDicWithSingletenant = new Dictionary<string, string>
+        {
+            {"isMultiTenant", "false"},
             {"clientid", "SomeClientId"},
             {"clientsecret", "SomeClientSecret"}
         };

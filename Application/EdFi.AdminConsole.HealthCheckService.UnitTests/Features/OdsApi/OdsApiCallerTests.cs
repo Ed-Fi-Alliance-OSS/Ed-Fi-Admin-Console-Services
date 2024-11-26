@@ -3,34 +3,67 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using System.Net;
+using EdFi.AdminConsole.HealthCheckService.Features;
+using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
+using EdFi.AdminConsole.HealthCheckService.Helpers;
+using EdFi.AdminConsole.HealthCheckService.Infrastructure;
 using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
 using FakeItEasy;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Shouldly;
 
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.OdsApi;
 
-[TestFixture]
-public class OdsApiCallerTests
+public class Given_an_ods_api_with_single_tenant
 {
-    private ILogger<InstanceValidatorTests> _logger;
-    private IOdsApiClient _fakeOdsApiClient;
-    private IOdsApiCaller _odsApiCaller;
-
-    [SetUp]
-    public void SetUp()
+    [TestFixture]
+    public class When_HealthCheckData_is_returned_from_api : Given_an_ods_api_with_single_tenant
     {
-        _logger = A.Fake<ILogger<InstanceValidatorTests>>();
-        _fakeOdsApiClient = new OdsApiClientFake();
-        _odsApiCaller = new OdsApiCaller(_logger, _fakeOdsApiClient, new AppSettingsOdsApiEndpoints(Testing.GetOdsApiSettings()));
-    }
+        private ILogger<Given_an_ods_api_with_single_tenant> _logger;
+        private IOdsApiClient _odsApiClient;
+        private IOdsApiCaller _odsApiCaller;
 
-    [Test]
-    public async Task GivenACallToOdsApi_ShouldReturnHealthCheckData()
-    {
-        var healthCheckData = await _odsApiCaller.GetHealthCheckDataAsync(Testing.AdminApiInstances.First());
-        healthCheckData.ShouldBeEquivalentTo(healthCheckData);
+        [SetUp]
+        public void SetUp()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(Testing.CommandArgsDicWithSingletenant)
+                .Build();
+
+            _logger = A.Fake<ILogger<Given_an_ods_api_with_single_tenant>>();
+
+            _odsApiClient = A.Fake<IOdsApiClient>();
+
+            var httpResponse1 = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            httpResponse1.Headers.Add(Constants.TotalCountHeader, "3");
+
+            var httpResponse2 = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            httpResponse2.Headers.Add(Constants.TotalCountHeader, "8");
+
+            var httpResponse3 = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            httpResponse3.Headers.Add(Constants.TotalCountHeader, "5");
+
+            A.CallTo(() => _odsApiClient.OdsApiGet(A<string>.Ignored, A<string>.Ignored, A<string>.Ignored, "http://www.myserver.com/data/v3/ed-fi/firstEndPoint?offset=0&limit=0&totalCount=true", "Get HealthCheck data from Ods Api"))
+                .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, httpResponse1.Headers));
+
+            A.CallTo(() => _odsApiClient.OdsApiGet(A<string>.Ignored, A<string>.Ignored, A<string>.Ignored, "http://www.myserver.com/data/v3/ed-fi/secondEndpoint?offset=0&limit=0&totalCount=true", "Get HealthCheck data from Ods Api"))
+                .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, httpResponse2.Headers));
+
+            A.CallTo(() => _odsApiClient.OdsApiGet(A<string>.Ignored, A<string>.Ignored, A<string>.Ignored, "http://www.myserver.com/data/v3/ed-fi/thirdEndPoint?offset=0&limit=0&totalCount=true", "Get HealthCheck data from Ods Api"))
+                .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, httpResponse3.Headers));
+
+            _odsApiCaller = new OdsApiCaller(_logger, _odsApiClient, new AppSettingsOdsApiEndpoints(Testing.GetOdsApiSettings()), new CommandArgs(configuration));
+        }
+
+        [Test]
+        public async Task GivenACallToOdsApi_ShouldReturnHealthCheckData()
+        {
+            var healthCheckData = await _odsApiCaller.GetHealthCheckDataAsync(Testing.AdminApiInstances.First());
+            healthCheckData.ShouldBeEquivalentTo(Testing.HealthCheckData);
+        }
     }
 }

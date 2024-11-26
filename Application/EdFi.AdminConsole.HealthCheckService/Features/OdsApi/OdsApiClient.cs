@@ -47,11 +47,7 @@ public class OdsApiClient : IOdsApiClient
             var currentAttempt = 0;
             while (RetryAttempts > currentAttempt)
             {
-                var tenantHeader = GetTenantHeaderIfMultitenant();
-                if (tenantHeader != null)
-                    response = await _appHttpClient.SendAsync(odsEndpointUrl, HttpMethod.Get, tenantHeader, new AuthenticationHeaderValue("bearer", _accessToken));
-                else
-                    response = await _appHttpClient.SendAsync(odsEndpointUrl, HttpMethod.Get, new AuthenticationHeaderValue("bearer", _accessToken));
+                response = await _appHttpClient.SendAsync(odsEndpointUrl, HttpMethod.Get, null as StringContent, new AuthenticationHeaderValue("bearer", _accessToken));
 
                 currentAttempt++;
 
@@ -67,20 +63,16 @@ public class OdsApiClient : IOdsApiClient
     {
         if (string.IsNullOrEmpty(_accessToken))
         {
-            FormUrlEncodedContent contentParams;
+            FormUrlEncodedContent content;
 
-            contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+            content = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
             {
                 new KeyValuePair<string, string>("Grant_type", "client_credentials")
             });
 
             var encodedKeySecret = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
 
-            var tenantHeader = GetTenantHeaderIfMultitenant();
-            if (tenantHeader != null)
-                contentParams.Headers.Add("tenant", tenantHeader);
-
-            var apiResponse = await _appHttpClient.SendAsync(accessTokenUrl, HttpMethod.Post, contentParams, new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret)));
+            var apiResponse = await _appHttpClient.SendAsync(accessTokenUrl, HttpMethod.Post, content, new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret)));
 
             if (apiResponse.StatusCode == HttpStatusCode.OK)
             {
@@ -93,13 +85,4 @@ public class OdsApiClient : IOdsApiClient
             }
         }
     }
-
-    protected string? GetTenantHeaderIfMultitenant()
-    {
-        if (_commandArgs.IsMultiTenant)
-            return _commandArgs.Tenant;
-
-        return null;
-    }
-
 }

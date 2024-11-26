@@ -7,11 +7,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using EdFi.AdminConsole.HealthCheckService.Features;
-using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
+using EdFi.AdminConsole.HealthCheckService.Helpers;
 using EdFi.AdminConsole.HealthCheckService.Infrastructure;
 using EdFi.Ods.AdminApi.HealthCheckService.UnitTests;
-using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
 using FakeItEasy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,74 +19,79 @@ using Shouldly;
 
 namespace EdFi.AdminConsole.HealthCheckService.UnitTests.Features.OdsApi;
 
-public class GivenASingleTenantEnvironment
+public class Given_an_ods_environment_with_single_tenant
 {
-    private ILogger<GivenASingleTenantEnvironment> _logger;
     private IConfiguration _configuration;
+    private ILogger<Given_an_ods_environment_with_single_tenant> _logger;
 
     [SetUp]
     public void SetUp()
     {
         _configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(Testing.CommandArgsDic)
+            .AddInMemoryCollection(Testing.CommandArgsDicWithSingletenant)
             .Build();
 
-        _logger = A.Fake<ILogger<GivenASingleTenantEnvironment>>();
+        _logger = A.Fake<ILogger<When_HealthCheck_data_is_requested>>();
     }
 
-    [Test]
-    public async Task EverythingOk()
+    public class When_HealthCheck_data_is_requested : Given_an_ods_environment_with_single_tenant
     {
-        var httpClient = A.Fake<IAppHttpClient>();
+        [Test]
+        public async Task should_return_successfully()
+        {
+            var httpClient = A.Fake<IAppHttpClient>();
+            var adminApiInstance = Testing.AdminApiInstances.First();
+            var encodedKeySecret = Encoding.ASCII.GetBytes($"{adminApiInstance.ClientId}:{adminApiInstance.ClientSecret}");
+            var authFullUrl = adminApiInstance.BaseUrl + adminApiInstance.AuthenticationUrl;
+            var resourceFullUrl = adminApiInstance.BaseUrl + adminApiInstance.ResourcesUrl;
+            var headers = new HttpResponseMessage().Headers;
+            headers.Add(Constants.TotalCountHeader, "5");
 
-        var adminApiInstance = Testing.AdminApiInstances.First();
+            A.CallTo(() => httpClient.SendAsync(
+                authFullUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret))))
+                .Returns(new ApiResponse(HttpStatusCode.OK, "{ \"access_token\": \"123\"}"));
 
-        var encodedKeySecret = Encoding.ASCII.GetBytes($"{adminApiInstance.ClientId}:{adminApiInstance.ClientSecret}");
+            A.CallTo(() => httpClient.SendAsync(resourceFullUrl, HttpMethod.Get, null as StringContent, new AuthenticationHeaderValue("bearer", "123")))
+                .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, headers));
 
-        var headers = new HttpResponseMessage().Headers;
-        headers.Add("total-count", "5");
+            var odsApiClient = new OdsApiClient(httpClient, _logger, Testing.GetAppSettings(), new CommandArgs(_configuration));
 
-        A.CallTo(() => httpClient.SendAsync(
-            adminApiInstance.AuthenticationUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret))))
-            .Returns(new ApiResponse(HttpStatusCode.OK, "{ \"access_token\": \"123\"}"));
+            var response = await odsApiClient.OdsApiGet(
+                authFullUrl, adminApiInstance.ClientId, adminApiInstance.ClientSecret, resourceFullUrl, "Get Total Count from Ods Api");
 
-        A.CallTo(() => httpClient.SendAsync(adminApiInstance.ResourcesUrl, HttpMethod.Get, new AuthenticationHeaderValue("bearer", "123")))
-            .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, headers));
-
-        var odsApiClient = new OdsApiClient(httpClient, _logger, Testing.GetAppSettings(), new CommandArgs(_configuration));
-
-        var response = await odsApiClient.OdsApiGet(
-            adminApiInstance.AuthenticationUrl, adminApiInstance.ClientId, adminApiInstance.ClientSecret, adminApiInstance.ResourcesUrl, "Get Total Count from Ods Api");
-
-        response.Headers.ShouldNotBeNull();
-        response.Headers.Any(o => o.Key == "total-count").ShouldBe(true);
-        response.Headers.GetValues("total-count").First().ShouldBe("5");
+            response.Headers.ShouldNotBeNull();
+            response.Headers.Any(o => o.Key == Constants.TotalCountHeader).ShouldBe(true);
+            response.Headers.GetValues(Constants.TotalCountHeader).First().ShouldBe("5");
+        }
     }
 
-    [Test]
-    public async Task No_Access_Token()
+    public class When_HealthCheck_data_is_requested_without_token : Given_an_ods_environment_with_single_tenant
     {
-        var httpClient = A.Fake<IAppHttpClient>();
+        [Test]
+        public async Task InternalServerError_is_returned()
+        {
+            var httpClient = A.Fake<IAppHttpClient>();
+            var adminApiInstance = Testing.AdminApiInstances.First();
+            var encodedKeySecret = Encoding.ASCII.GetBytes($"{adminApiInstance.ClientId}:{adminApiInstance.ClientSecret}");
+            var authFullUrl = adminApiInstance.BaseUrl + adminApiInstance.AuthenticationUrl;
+            var resourceFullUrl = adminApiInstance.BaseUrl + adminApiInstance.ResourcesUrl;
 
-        var adminApiInstance = Testing.AdminApiInstances.First();
+            var headers = new HttpResponseMessage().Headers;
+            headers.Add(Constants.TotalCountHeader, "5");
 
-        var encodedKeySecret = Encoding.ASCII.GetBytes($"{adminApiInstance.ClientId}:{adminApiInstance.ClientSecret}");
+            A.CallTo(() => httpClient.SendAsync(
+                authFullUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret))))
+                .Returns(new ApiResponse(HttpStatusCode.InternalServerError, string.Empty));
 
-        var headers = new HttpResponseMessage().Headers;
-        headers.Add("total-count", "5");
+            A.CallTo(() => httpClient.SendAsync(resourceFullUrl, HttpMethod.Get, null as StringContent, new AuthenticationHeaderValue("bearer", "123")))
+                .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, headers));
 
-        A.CallTo(() => httpClient.SendAsync(
-            adminApiInstance.AuthenticationUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, new AuthenticationHeaderValue("Basic", Convert.ToBase64String(encodedKeySecret))))
-            .Returns(new ApiResponse(HttpStatusCode.InsufficientStorage, string.Empty));
+            var odsApiClient = new OdsApiClient(httpClient, _logger, Testing.GetAppSettings(), new CommandArgs(_configuration));
 
-        A.CallTo(() => httpClient.SendAsync(adminApiInstance.ResourcesUrl, HttpMethod.Get, new AuthenticationHeaderValue("bearer", "123")))
-            .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, headers));
+            var response = await odsApiClient.OdsApiGet(
+                adminApiInstance.BaseUrl + adminApiInstance.AuthenticationUrl, adminApiInstance.ClientId, adminApiInstance.ClientSecret, adminApiInstance.BaseUrl + adminApiInstance.ResourcesUrl, "Get Total Count from Ods Api");
 
-        var odsApiClient = new OdsApiClient(httpClient, _logger, Testing.GetAppSettings(), new CommandArgs(_configuration));
-
-        var response = await odsApiClient.OdsApiGet(
-            adminApiInstance.AuthenticationUrl, adminApiInstance.ClientId, adminApiInstance.ClientSecret, adminApiInstance.ResourcesUrl, "Get Total Count from Ods Api");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+            response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+        }
     }
 }

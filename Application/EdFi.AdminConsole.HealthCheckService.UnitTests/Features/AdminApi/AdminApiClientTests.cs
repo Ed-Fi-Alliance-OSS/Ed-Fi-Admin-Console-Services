@@ -9,7 +9,6 @@ using EdFi.AdminConsole.HealthCheckService.Features;
 using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Infrastructure;
 using EdFi.Ods.AdminApi.HealthCheckService.UnitTests;
-using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
 using FakeItEasy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -18,56 +17,62 @@ using Shouldly;
 
 namespace EdFi.AdminConsole.HealthCheckService.UnitTests.Features.AdminApi;
 
-[TestFixture]
-public class GivenASingleTenantEnvironment
+public class Given_an_admin_api_with_single_tenant
 {
-    private ILogger<GivenASingleTenantEnvironment> _logger;
     private IConfiguration _configuration;
+    private ILogger<Given_an_admin_api_with_single_tenant> _logger;
 
     [SetUp]
     public void SetUp()
     {
         _configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(Testing.CommandArgsDic)
+            .AddInMemoryCollection(Testing.CommandArgsDicWithSingletenant)
             .Build();
 
-        _logger = A.Fake<ILogger<GivenASingleTenantEnvironment>>();
+        _logger = A.Fake<ILogger<Given_an_admin_api_with_single_tenant>>();
     }
 
-    [Test]
-    public async Task EverythingOk()
+    [TestFixture]
+    public class When_instances_are_requested : Given_an_admin_api_with_single_tenant
     {
-        var httpClient = A.Fake<IAppHttpClient>();
-        var instancesUrl = Testing.GetAdminApiSettings().Value.ApiUrl + Testing.GetAdminApiSettings().Value.AdminConsoleInstancesURI;
+        [Test]
+        public async Task should_return_successfully()
+        {
+            var httpClient = A.Fake<IAppHttpClient>();
+            var instancesUrl = Testing.GetAdminApiSettings().Value.ApiUrl + Testing.GetAdminApiSettings().Value.AdminConsoleInstancesURI;
 
-        A.CallTo(() => httpClient.SendAsync(Testing.GetAdminApiSettings().Value.AccessTokenUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, null))
-            .Returns(new ApiResponse(HttpStatusCode.OK, "{ \"access_token\": \"123\"}"));
+            A.CallTo(() => httpClient.SendAsync(Testing.GetAdminApiSettings().Value.AccessTokenUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, null))
+                .Returns(new ApiResponse(HttpStatusCode.OK, "{ \"access_token\": \"123\"}"));
 
-        A.CallTo(() => httpClient.SendAsync(instancesUrl, HttpMethod.Get, new AuthenticationHeaderValue("bearer", "123")))
-            .Returns(new ApiResponse(HttpStatusCode.OK, Testing.Instances));
+            A.CallTo(() => httpClient.SendAsync(instancesUrl, HttpMethod.Get, null as StringContent, new AuthenticationHeaderValue("bearer", "123")))
+                .Returns(new ApiResponse(HttpStatusCode.OK, Testing.Instances));
 
-        var adminApiClient = new AdminApiClient(httpClient, _logger, Testing.GetAdminApiSettings(), new CommandArgs(_configuration));
+            var adminApiClient = new AdminApiClient(httpClient, _logger, Testing.GetAdminApiSettings(), new CommandArgs(_configuration));
 
-        var InstancesReponse = await adminApiClient.AdminApiGet("Get Instances from Admin Api");
+            var InstancesReponse = await adminApiClient.AdminApiGet("Get Instances from Admin Api");
 
-        InstancesReponse.Content.ShouldBeEquivalentTo(Testing.Instances);
+            InstancesReponse.Content.ShouldBeEquivalentTo(Testing.Instances);
+        }
     }
 
-    [Test]
-    public async Task No_Access_Token()
+    public class When_instances_are_requested_without_token : Given_an_admin_api_with_single_tenant
     {
-        var httpClient = A.Fake<IAppHttpClient>();
+        [Test]
+        public async Task InternalServerError_is_returned()
+        {
+            var httpClient = A.Fake<IAppHttpClient>();
 
-        A.CallTo(() => httpClient.SendAsync(Testing.GetAdminApiSettings().Value.AccessTokenUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, null))
-            .Returns(new ApiResponse(HttpStatusCode.InternalServerError, string.Empty));
+            A.CallTo(() => httpClient.SendAsync(Testing.GetAdminApiSettings().Value.AccessTokenUrl, HttpMethod.Post, A<FormUrlEncodedContent>.Ignored, null))
+                .Returns(new ApiResponse(HttpStatusCode.InternalServerError, string.Empty));
 
-        A.CallTo(() => httpClient.SendAsync(Testing.GetAdminApiSettings().Value.ApiUrl + Testing.GetAdminApiSettings().Value.AdminConsoleInstancesURI, HttpMethod.Get, new AuthenticationHeaderValue("bearer", "123")))
-            .Returns(new ApiResponse(HttpStatusCode.OK, Testing.Instances));
+            A.CallTo(() => httpClient.SendAsync(Testing.GetAdminApiSettings().Value.ApiUrl + Testing.GetAdminApiSettings().Value.AdminConsoleInstancesURI, HttpMethod.Get, null as StringContent, new AuthenticationHeaderValue("bearer", "123")))
+                .Returns(new ApiResponse(HttpStatusCode.OK, Testing.Instances));
 
-        var adminApiClient = new AdminApiClient(httpClient, _logger, Testing.GetAdminApiSettings(), new CommandArgs(_configuration));
+            var adminApiClient = new AdminApiClient(httpClient, _logger, Testing.GetAdminApiSettings(), new CommandArgs(_configuration));
 
-        var getOnAdminApi = await adminApiClient.AdminApiGet("Get Instances from Admin Api");
+            var getOnAdminApi = await adminApiClient.AdminApiGet("Get Instances from Admin Api");
 
-        getOnAdminApi.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+            getOnAdminApi.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+        }
     }
 }

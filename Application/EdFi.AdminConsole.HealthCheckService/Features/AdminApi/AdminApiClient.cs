@@ -48,15 +48,7 @@ public class AdminApiClient : IAdminApiClient
 
             while (RetryAttempts > currentAttempt)
             {
-                var tenantHeader = GetTenantHeaderIfMultitenant();
-                if (tenantHeader != null)
-                {
-                    response = await _appHttpClient.SendAsync(_adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI, HttpMethod.Get, tenantHeader, new AuthenticationHeaderValue("bearer", _accessToken));
-                }
-                else
-                {
-                    response = await _appHttpClient.SendAsync(_adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI, HttpMethod.Get, new AuthenticationHeaderValue("bearer", _accessToken));
-                }
+                response = await _appHttpClient.SendAsync(_adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI, HttpMethod.Get, null as StringContent, new AuthenticationHeaderValue("bearer", _accessToken));
 
                 currentAttempt++;
 
@@ -77,18 +69,13 @@ public class AdminApiClient : IAdminApiClient
         var currentAttempt = 0;
         while (RetryAttempts > currentAttempt)
         {
-            var strContent = content;
-            strContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            var tenantHeader = GetTenantHeaderIfMultitenant();
-            if (tenantHeader != null)
-                strContent.Headers.Add("tenant", tenantHeader);
-
-             response = await _appHttpClient.SendAsync(_adminApiOptions.ApiUrl, HttpMethod.Post, content, new AuthenticationHeaderValue("bearer", _accessToken));
+            response = await _appHttpClient.SendAsync(_adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleHealthCheckURI, HttpMethod.Post, content, new AuthenticationHeaderValue("bearer", _accessToken));
 
             currentAttempt++;
 
-            if (response.StatusCode == HttpStatusCode.OK)
+            if (response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK)
                 break;
         }
 
@@ -99,7 +86,7 @@ public class AdminApiClient : IAdminApiClient
     {
         if (string.IsNullOrEmpty(_accessToken))
         {
-            FormUrlEncodedContent contentParams = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+            FormUrlEncodedContent content = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
             {
                 new KeyValuePair<string, string>("client_id", _commandArgs.ClientId),
                 new KeyValuePair<string, string>("client_secret", _commandArgs.ClientSecret),
@@ -107,13 +94,9 @@ public class AdminApiClient : IAdminApiClient
                 new KeyValuePair<string, string>("scope", "edfi_admin_api/full_access")
             });
 
-            contentParams.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-            var tenantHeader = GetTenantHeaderIfMultitenant();
-            if (tenantHeader != null)
-                contentParams.Headers.Add("tenant", tenantHeader);
-
-            var apiResponse = await _appHttpClient.SendAsync(_adminApiOptions.AccessTokenUrl, HttpMethod.Post, contentParams, null);
+            var apiResponse = await _appHttpClient.SendAsync(_adminApiOptions.AccessTokenUrl, HttpMethod.Post, content, null);
 
             if (apiResponse.StatusCode == HttpStatusCode.OK)
             {
@@ -125,13 +108,5 @@ public class AdminApiClient : IAdminApiClient
                 _logger.LogError("Not able to get Admin Api Access Token");
             }
         }
-    }
-
-    protected string? GetTenantHeaderIfMultitenant()
-    {
-        if (_commandArgs.IsMultiTenant)
-            return _commandArgs.Tenant;
-
-        return null;
     }
 }

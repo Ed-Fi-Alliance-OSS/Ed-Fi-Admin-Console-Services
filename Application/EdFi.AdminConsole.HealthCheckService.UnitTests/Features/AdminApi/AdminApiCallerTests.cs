@@ -3,9 +3,10 @@
 // The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 // See the LICENSE and NOTICES files in the project root for more information.
 
+using System.Net;
 using EdFi.AdminConsole.HealthCheckService.Features;
 using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
-using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
+using EdFi.AdminConsole.HealthCheckService.Infrastructure;
 using FakeItEasy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,47 +15,55 @@ using Shouldly;
 
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.AdminApi;
 
-[TestFixture]
-public class AdminApiCallerTests
+public class Given_an_admin_api_with_single_tenant
 {
-    private ILogger<InstanceValidatorTests> _logger;
-    private IAdminApiClient _fakeAdminApiClient;
-    private IAdminApiCaller _adminApiCaller;
-
-    [SetUp]
-    public void SetUp()
+    [TestFixture]
+    public class When_instances_are_returned_from_api : Given_an_admin_api_with_single_tenant
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(Testing.CommandArgsDic)
-            .Build();
+        private ILogger<When_instances_are_returned_from_api> _logger;
+        private IAdminApiCaller _adminApiCaller;
+        private IAdminApiClient _adminApiClient;
 
-        _logger = A.Fake<ILogger<InstanceValidatorTests>>();
-        _fakeAdminApiClient = new AdminApiClientFake();
-        _adminApiCaller = new AdminApiCaller(_logger, _fakeAdminApiClient, Testing.GetAdminApiSettings(), new CommandArgs(configuration));
-    }
+        [SetUp]
+        public void SetUp()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(Testing.CommandArgsDicWithSingletenant)
+                .Build();
 
-    [Test]
-    public async Task GivenACallToAdminApi_ShouldReturnInstances()
-    {
-        var instances = await _adminApiCaller.GetInstancesAsync();
-        instances.Count().ShouldBe(2);
+            _logger = A.Fake<ILogger<When_instances_are_returned_from_api>>();
 
-        instances.First().InstanceId.ShouldBe(1);
-        instances.First().TenantId.ShouldBe(1);
-        instances.First().InstanceName.ShouldBe("instance 1");
-        instances.First().ClientId.ShouldBe("one client");
-        instances.First().ClientSecret.ShouldBe("one secret");
-        instances.First().BaseUrl.ShouldBe("one base url");
-        instances.First().ResourcesUrl.ShouldBe("one resourse url");
-        instances.First().AuthenticationUrl.ShouldBe("one auth url");
+            _adminApiClient = A.Fake<IAdminApiClient>();
 
-        instances.ElementAt(1).InstanceId.ShouldBe(2);
-        instances.ElementAt(1).TenantId.ShouldBe(2);
-        instances.ElementAt(1).InstanceName.ShouldBe("instance 2");
-        instances.ElementAt(1).ClientId.ShouldBe("another client");
-        instances.ElementAt(1).ClientSecret.ShouldBe("another secret");
-        instances.ElementAt(1).BaseUrl.ShouldBe("another base url");
-        instances.ElementAt(1).ResourcesUrl.ShouldBe("another resourse url");
-        instances.ElementAt(1).AuthenticationUrl.ShouldBe("another auth url");
+            A.CallTo(() => _adminApiClient.AdminApiGet("Getting instances from Admin API - Admin Console extension"))
+                .Returns(new ApiResponse(HttpStatusCode.OK, Testing.Instances));
+
+            _adminApiCaller = new AdminApiCaller(_logger, _adminApiClient, Testing.GetAdminApiSettings(), new CommandArgs(configuration));
+        }
+
+        [Test]
+        public async Task should_return_stronglytyped_instances()
+        {
+            var instances = await _adminApiCaller.GetInstancesAsync();
+            instances.Count().ShouldBe(2);
+
+            instances.First().InstanceId.ShouldBe(1);
+            instances.First().TenantId.ShouldBe(1);
+            instances.First().InstanceName.ShouldBe("instance 1");
+            instances.First().ClientId.ShouldBe("one client");
+            instances.First().ClientSecret.ShouldBe("one secret");
+            instances.First().BaseUrl.ShouldBe("http://www.myserver.com");
+            instances.First().ResourcesUrl.ShouldBe("/data/v3/ed-fi/");
+            instances.First().AuthenticationUrl.ShouldBe("/connect/token");
+
+            instances.ElementAt(1).InstanceId.ShouldBe(2);
+            instances.ElementAt(1).TenantId.ShouldBe(2);
+            instances.ElementAt(1).InstanceName.ShouldBe("instance 2");
+            instances.ElementAt(1).ClientId.ShouldBe("another client");
+            instances.ElementAt(1).ClientSecret.ShouldBe("another secret");
+            instances.ElementAt(1).BaseUrl.ShouldBe("http://www.otherserver.com");
+            instances.ElementAt(1).ResourcesUrl.ShouldBe("/data/v3/ed-fi/");
+            instances.ElementAt(1).AuthenticationUrl.ShouldBe("/connect/token");
+        }
     }
 }

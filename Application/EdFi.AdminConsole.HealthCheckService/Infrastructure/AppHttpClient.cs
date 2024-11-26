@@ -11,11 +11,7 @@ namespace EdFi.AdminConsole.HealthCheckService.Infrastructure;
 
 public interface IAppHttpClient
 {
-    Task<ApiResponse> SendAsync(string uriString, HttpMethod method, AuthenticationHeaderValue? authenticationHeaderValue);
-
-    Task<ApiResponse> SendAsync(string uriString, HttpMethod method, string tenantHeader, AuthenticationHeaderValue? authenticationHeaderValue);
-
-    Task<ApiResponse> SendAsync(string uriString, HttpMethod method, StringContent content, AuthenticationHeaderValue? authenticationHeaderValue);
+    Task<ApiResponse> SendAsync(string uriString, HttpMethod method, StringContent? content, AuthenticationHeaderValue? authenticationHeaderValue);
 
     Task<ApiResponse> SendAsync(string uriString, HttpMethod method, FormUrlEncodedContent content, AuthenticationHeaderValue? authenticationHeaderValue);
 }
@@ -25,61 +21,19 @@ public class AppHttpClient : IAppHttpClient
     private readonly HttpClient _httpClient;
     protected readonly ILogger _logger;
     protected readonly IOptions<AppSettings> _options;
+    private IHttpRequestMessageBuilder _httpRequestMessageBuilder;
 
-    public AppHttpClient(HttpClient httpClient, ILogger logger, IOptions<AppSettings> options)
+    public AppHttpClient(HttpClient httpClient, ILogger logger, IOptions<AppSettings> options, IHttpRequestMessageBuilder httpRequestMessageBuilder)
     {
         _httpClient = httpClient;
-
         _logger = logger;
         _options = options;
+        _httpRequestMessageBuilder = httpRequestMessageBuilder;
     }
 
-    /// Single Tenant
-    public async Task<ApiResponse> SendAsync(string uriString, HttpMethod method, AuthenticationHeaderValue? authenticationHeaderValue)
+    public async Task<ApiResponse> SendAsync(string uriString, HttpMethod method, StringContent? content, AuthenticationHeaderValue? authenticationHeaderValue)
     {
-        var request = new HttpRequestMessage()
-        {
-            RequestUri = new Uri(uriString),
-            Method = method,
-        };
-
-        if (authenticationHeaderValue != null)
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = authenticationHeaderValue;
-        }
-        var response = await _httpClient.SendAsync(request);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return new ApiResponse(response.StatusCode, responseContent, response.Headers);
-    }
-
-    /// Multi Tenant
-    public async Task<ApiResponse> SendAsync(string uriString, HttpMethod method, string tenantHeader, AuthenticationHeaderValue? authenticationHeaderValue)
-    {
-        var request = new HttpRequestMessage()
-        {
-            RequestUri = new Uri(uriString),
-            Method = method,
-        };
-
-        request.Headers.Add("tenant", tenantHeader);
-
-        if (authenticationHeaderValue != null)
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = authenticationHeaderValue;
-        }
-        var response = await _httpClient.SendAsync(request);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return new ApiResponse(response.StatusCode, responseContent, response.Headers);
-    }
-
-    public async Task<ApiResponse> SendAsync(string uriString, HttpMethod method, StringContent content, AuthenticationHeaderValue? authenticationHeaderValue)
-    {
-        var request = new HttpRequestMessage()
-        {
-            RequestUri = new Uri(uriString),
-            Method = method,
-            Content = content
-        };
+        var request = _httpRequestMessageBuilder.GetHttpRequestMessage(uriString, method, content);
 
         if (authenticationHeaderValue != null)
         {
@@ -93,12 +47,7 @@ public class AppHttpClient : IAppHttpClient
     /// Access Token
     public async Task<ApiResponse> SendAsync(string uriString, HttpMethod method, FormUrlEncodedContent content, AuthenticationHeaderValue? authenticationHeaderValue)
     {
-        var request = new HttpRequestMessage()
-        {
-            RequestUri = new Uri(uriString),
-            Method = method,
-            Content = content
-        };
+        var request = _httpRequestMessageBuilder.GetHttpRequestMessage(uriString, method, content);
 
         if (authenticationHeaderValue != null)
         {
