@@ -81,7 +81,7 @@ public class OdsApiClient : IOdsApiClient
             }
             else
             {
-                _logger.LogError("Not able to get Admin Api Access Token");
+                _logger.LogError("Not able to get Ods Api Access Token");
             }
         }
     }
