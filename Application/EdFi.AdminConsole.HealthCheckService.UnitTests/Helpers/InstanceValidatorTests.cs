@@ -36,7 +36,7 @@ public class Given_an_instance_returned_from_AdminApi
     public class When_it_has_all_required_fields : Given_an_instance_returned_from_AdminApi
     {
         [Test]
-        public void GivenAnInstanceWithoutAuthenticationUrl_NoErrorsAreReturned()
+        public void should_be_valid()
         {
             InstanceValidator.IsInstanceValid(_logger, _instance).ShouldBeTrue();
         }

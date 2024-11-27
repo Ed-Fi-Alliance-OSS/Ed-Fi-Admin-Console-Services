@@ -17,10 +17,10 @@ using Shouldly;
 
 namespace EdFi.AdminConsole.HealthCheckService.UnitTests.Features.AdminApi;
 
-public class Given_an_admin_api_with_single_tenant
+public class Given_an_admin_api
 {
     private IConfiguration _configuration;
-    private ILogger<Given_an_admin_api_with_single_tenant> _logger;
+    private ILogger<Given_an_admin_api> _logger;
 
     [SetUp]
     public void SetUp()
@@ -29,11 +29,11 @@ public class Given_an_admin_api_with_single_tenant
             .AddInMemoryCollection(Testing.CommandArgsDicWithSingletenant)
             .Build();
 
-        _logger = A.Fake<ILogger<Given_an_admin_api_with_single_tenant>>();
+        _logger = A.Fake<ILogger<Given_an_admin_api>>();
     }
 
     [TestFixture]
-    public class When_instances_are_requested : Given_an_admin_api_with_single_tenant
+    public class When_instances_are_requested : Given_an_admin_api
     {
         [Test]
         public async Task should_return_successfully()
@@ -55,7 +55,7 @@ public class Given_an_admin_api_with_single_tenant
         }
     }
 
-    public class When_instances_are_requested_without_token : Given_an_admin_api_with_single_tenant
+    public class When_instances_are_requested_without_token : Given_an_admin_api
     {
         [Test]
         public async Task InternalServerError_is_returned()

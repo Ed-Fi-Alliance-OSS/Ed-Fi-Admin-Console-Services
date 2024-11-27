@@ -15,10 +15,10 @@ using Shouldly;
 
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.AdminApi;
 
-public class Given_an_admin_api_with_single_tenant
+public class Given_an_admin_api
 {
     [TestFixture]
-    public class When_instances_are_returned_from_api : Given_an_admin_api_with_single_tenant
+    public class When_instances_are_returned_from_api : Given_an_admin_api
     {
         private ILogger<When_instances_are_returned_from_api> _logger;
         private IAdminApiCaller _adminApiCaller;

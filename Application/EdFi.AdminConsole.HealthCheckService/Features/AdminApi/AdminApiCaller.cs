@@ -4,6 +4,7 @@
 // See the LICENSE and NOTICES files in the project root for more information.
 
 using System.Text;
+using EdFi.AdminConsole.HealthCheckService.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -33,7 +34,7 @@ public class AdminApiCaller : IAdminApiCaller
 
     public async Task<IEnumerable<AdminApiInstanceDocument>> GetInstancesAsync()
     {
-        if (IsAdminApiSettingsValid())
+        if (AdminApiConnectioDataValidator.IsValid(_logger, _adminApiOptions, _commandArgs))
         {
             var instancesEndpoint = _adminApiOptions.ApiUrl + _adminApiOptions.AdminConsoleInstancesURI;
             var response = await _adminApiClient.AdminApiGet("Getting instances from Admin API - Admin Console extension");

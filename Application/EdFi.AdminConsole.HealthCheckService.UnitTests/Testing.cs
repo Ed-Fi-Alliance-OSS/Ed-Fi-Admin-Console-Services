@@ -4,7 +4,6 @@
 // See the LICENSE and NOTICES files in the project root for more information.
 
 using EdFi.AdminConsole.HealthCheckService;
-using EdFi.AdminConsole.HealthCheckService.Features;
 using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
 using Microsoft.Extensions.Options;
@@ -26,7 +25,7 @@ public class Testing
         adminApiSettings.AccessTokenUrl = "http://www.myserver.com/token";
         adminApiSettings.ApiUrl = "http://www.myserver.com";
         adminApiSettings.AdminConsoleInstancesURI = "/adminconsole/instances";
-        adminApiSettings.AdminConsoleHealthCheckURI = "/adminconsole/instances";
+        adminApiSettings.AdminConsoleHealthCheckURI = "/adminconsole/healthcheck";
         IOptions<AdminApiSettings> options = Options.Create(adminApiSettings);
         return options;
     }
@@ -134,6 +133,28 @@ public class Testing
     public static Dictionary<string, string> CommandArgsDicWithSingletenant = new Dictionary<string, string>
         {
             {"isMultiTenant", "false"},
+            {"clientid", "SomeClientId"},
+            {"clientsecret", "SomeClientSecret"}
+        };
+
+    public static Dictionary<string, string> CommandArgsDicNoClientId = new Dictionary<string, string>
+        {
+            {"isMultiTenant", "false"},
+            {"clientid", ""},
+            {"clientsecret", "SomeClientSecret"}
+        };
+
+    public static Dictionary<string, string> CommandArgsDicNoClientSecret = new Dictionary<string, string>
+        {
+            {"isMultiTenant", "false"},
+            {"clientid", "SomeClientId"},
+            {"clientsecret", ""}
+        };
+
+    public static Dictionary<string, string> CommandArgsDicWithMultitenantNoTenant = new Dictionary<string, string>
+        {
+            {"isMultiTenant", "true"},
+            {"tenant", ""},
             {"clientid", "SomeClientId"},
             {"clientsecret", "SomeClientSecret"}
         };

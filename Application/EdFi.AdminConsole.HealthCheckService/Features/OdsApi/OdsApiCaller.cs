@@ -5,6 +5,7 @@
 
 using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Helpers;
+using EdFi.AdminConsole.HealthCheckService.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
@@ -20,13 +21,15 @@ public class OdsApiCaller : IOdsApiCaller
     private IOdsApiClient _odsApiClient;
     private IAppSettingsOdsApiEndpoints _appSettingsOdsApiEndpoints;
     private readonly ICommandArgs _commandArgs;
+    private IOdsResourceEndpointUrlBuilder _odsResourceEndpointUrlBuilder;
 
-    public OdsApiCaller(ILogger logger, IOdsApiClient odsApiClient, IAppSettingsOdsApiEndpoints appSettingsOdsApiEndpoints, ICommandArgs commandArgs)
+    public OdsApiCaller(ILogger logger, IOdsApiClient odsApiClient, IAppSettingsOdsApiEndpoints appSettingsOdsApiEndpoints, ICommandArgs commandArgs, IOdsResourceEndpointUrlBuilder odsResourceEndpointUrlBuilder)
     {
         _logger = logger;
         _odsApiClient = odsApiClient;
         _appSettingsOdsApiEndpoints = appSettingsOdsApiEndpoints;
         _commandArgs = commandArgs;
+        _odsResourceEndpointUrlBuilder = odsResourceEndpointUrlBuilder;
     }
 
     public async Task<List<OdsApiEndpointNameCount>> GetHealthCheckDataAsync(AdminApiInstanceDocument instance)
@@ -35,13 +38,9 @@ public class OdsApiCaller : IOdsApiCaller
 
         foreach (var appSettingsOdsApiEndpoint in _appSettingsOdsApiEndpoints)
         {
-            var odsResourceEndpointUrl = (_commandArgs.IsMultiTenant)
-                ? $"{instance.BaseUrl}/{_commandArgs.Tenant}{instance.ResourcesUrl}{appSettingsOdsApiEndpoint}{Constants.OdsApiQueryParams}"
-                : $"{instance.BaseUrl}{instance.ResourcesUrl}{appSettingsOdsApiEndpoint}{Constants.OdsApiQueryParams}";
+            var odsResourceEndpointUrl = _odsResourceEndpointUrlBuilder.GetOdsResourceEndpointUrl(instance.BaseUrl, $"{instance.ResourcesUrl}{appSettingsOdsApiEndpoint}");
 
-            var odsAuthEndpointUrl = (_commandArgs.IsMultiTenant)
-                ? $"{instance.BaseUrl}/{_commandArgs.Tenant}{instance.AuthenticationUrl}"
-                : $"{instance.BaseUrl}{instance.AuthenticationUrl}";
+            var odsAuthEndpointUrl = _odsResourceEndpointUrlBuilder.GetOdsAuthEndpointUrl(instance.BaseUrl, instance.AuthenticationUrl);
 
             tasks.Add(Task.Run(() => GetCountPerEndpointAsync(
                 appSettingsOdsApiEndpoint, odsAuthEndpointUrl, instance.ClientId, instance.ClientSecret, odsResourceEndpointUrl)));

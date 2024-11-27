@@ -23,9 +23,10 @@ The application executes 3 main steps.
 
 ## Project Initial Configuration
 
-This project depends on AdminAPI, so it will be require to provide the information at `Application/EdFi.AdminConsole.HealthCheckService/appsettings.json`.
-It will also make requests to the Ods Api based on the information returned from the `Admin Api - Admin Console extension` on the `instances` endpoint.
-Following you can find an example:
+This project depends on AdminAPI, so it will be require to provide some information at `Application/EdFi.AdminConsole.HealthCheckService/appsettings.json`.
+The credentials (ClientId and ClientSecret) are provided as part of the executable command arguments.
+`Ed-Fi-Admin-Console-Health-Check-Worker-Process` will also make requests to the Ods Api based on the information returned from the `Admin Api - Admin Console extension` on the `instances` endpoint.
+Following you can find an example of the `appsettings.json` file. You can use this as a reference.
 
 ```json
 {
@@ -36,9 +37,7 @@ Following you can find an example:
     "ApiUrl": "api url",
     "AdminConsoleInstancesURI": "/adminconsole/instances",
     "AdminConsoleHealthCheckURI": "/adminconsole/healthcheck",
-    "AccessTokenUrl": "token url",
-    "ClientId": "",
-    "ClientSecret": ""
+    "AccessTokenUrl": "token url"
   },
   "OdsApiSettings": {
     "Endpoints": [
@@ -66,13 +65,22 @@ Make sure it is set to `False` on a production environment.
 
 ### AdminApiSettings
 
-Contains all the necessary information to get connected to the Admin Api. 
+Contains all the necessary information to get connected to the Admin Api, with the exeption of the credentials as mentioned before.
 
 ### OdsApiSettings
 
 |Setting|Description|
 |---|---|
 |Endpoints|List of Ods Api endpoints to be called for building the HealthCheck payload|
+
+### Command line arguments
+
+|Argument|Description|
+|---|---|
+|IsMultiTenant|Set this value to true, when `Ed-Fi-Admin-Console-Health-Check-Worker-Process` is goging to be executed on a Multitenant configuration. Default value is `false`.|
+|Tenant|Tenant name. Required when Admin Api has been set up in a Multitenant mode.|
+|ClientId|ClientId to get connected to the Admin Api. Required.|
+|ClientSecret|ClientSecret to get connected to the Admin Api. Required.|
 
 ## Requests to the Ods Api
 
@@ -93,7 +101,7 @@ The data required is the following.
 
 ## Multitenancy mode
 
-
+In a context where the Admin Api has been set up in a Multitenant mode, Ed-Fi-Admin-Console-Health-Check-Worker-Process needs to be executed once per each tenant.
 
 ## Launch the project
 
@@ -110,8 +118,14 @@ docker build -f Docker/Dockerfile -t edfi.adminconsole.healthcheckservice .
 
 Once the Docker image has been built, we can execute the following command to run the application.
 
+Multitenant mode
 ```bash
-docker run -it edfi.adminconsole.healthcheckservice
+docker run -it edfi.adminconsole.healthcheckservice --isMultiTenant=true --tenant="<tenant>" --ClientId="<ClientId>" --ClientSecret="<ClientSecret>"
+```
+
+Singletenant mode
+```bash
+docker run -it edfi.adminconsole.healthcheckservice --ClientId="<ClientId>" --ClientSecret="<ClientSecret>"
 ```
 
 In case you want the container to be removed automatically once the application has completed its execution, include the `--rm` parameter. 

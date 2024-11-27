@@ -5,11 +5,9 @@
 
 using System.Net;
 using EdFi.AdminConsole.HealthCheckService.Features;
-using EdFi.AdminConsole.HealthCheckService.Features.AdminApi;
 using EdFi.AdminConsole.HealthCheckService.Features.OdsApi;
 using EdFi.AdminConsole.HealthCheckService.Helpers;
 using EdFi.AdminConsole.HealthCheckService.Infrastructure;
-using EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Helpers;
 using FakeItEasy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -18,13 +16,14 @@ using Shouldly;
 
 namespace EdFi.Ods.AdminApi.HealthCheckService.UnitTests.Features.OdsApi;
 
-public class Given_an_ods_api_with_single_tenant
+public class Given_an_ods_api
 {
     [TestFixture]
-    public class When_HealthCheckData_is_returned_from_api : Given_an_ods_api_with_single_tenant
+    public class When_HealthCheckData_is_returned_from_api : Given_an_ods_api
     {
-        private ILogger<Given_an_ods_api_with_single_tenant> _logger;
+        private ILogger<Given_an_ods_api> _logger;
         private IOdsApiClient _odsApiClient;
+        private IOdsResourceEndpointUrlBuilder _odsResourceEndpointUrlBuilder;
         private IOdsApiCaller _odsApiCaller;
 
         [SetUp]
@@ -34,9 +33,14 @@ public class Given_an_ods_api_with_single_tenant
                 .AddInMemoryCollection(Testing.CommandArgsDicWithSingletenant)
                 .Build();
 
-            _logger = A.Fake<ILogger<Given_an_ods_api_with_single_tenant>>();
+            var commandArgs = new CommandArgs(configuration);
+
+            _logger = A.Fake<ILogger<Given_an_ods_api>>();
 
             _odsApiClient = A.Fake<IOdsApiClient>();
+            _odsResourceEndpointUrlBuilder = A.Fake<IOdsResourceEndpointUrlBuilder>();
+
+            var adminApiInstance = Testing.AdminApiInstances.First();
 
             var httpResponse1 = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
             httpResponse1.Headers.Add(Constants.TotalCountHeader, "3");
@@ -56,11 +60,20 @@ public class Given_an_ods_api_with_single_tenant
             A.CallTo(() => _odsApiClient.OdsApiGet(A<string>.Ignored, A<string>.Ignored, A<string>.Ignored, "http://www.myserver.com/data/v3/ed-fi/thirdEndPoint?offset=0&limit=0&totalCount=true", "Get HealthCheck data from Ods Api"))
                 .Returns(new ApiResponse(HttpStatusCode.OK, string.Empty, httpResponse3.Headers));
 
-            _odsApiCaller = new OdsApiCaller(_logger, _odsApiClient, new AppSettingsOdsApiEndpoints(Testing.GetOdsApiSettings()), new CommandArgs(configuration));
+            A.CallTo(() => _odsResourceEndpointUrlBuilder.GetOdsResourceEndpointUrl(adminApiInstance.BaseUrl, $"{adminApiInstance.ResourcesUrl}firstEndPoint"))
+                .Returns($"{adminApiInstance.BaseUrl}{adminApiInstance.ResourcesUrl}firstEndPoint{Constants.OdsApiQueryParams}");
+
+            A.CallTo(() => _odsResourceEndpointUrlBuilder.GetOdsResourceEndpointUrl(adminApiInstance.BaseUrl, $"{adminApiInstance.ResourcesUrl}secondEndpoint"))
+                .Returns($"{adminApiInstance.BaseUrl}{adminApiInstance.ResourcesUrl}secondEndpoint{Constants.OdsApiQueryParams}");
+
+            A.CallTo(() => _odsResourceEndpointUrlBuilder.GetOdsResourceEndpointUrl(adminApiInstance.BaseUrl, $"{adminApiInstance.ResourcesUrl}thirdEndPoint"))
+                .Returns($"{adminApiInstance.BaseUrl}{adminApiInstance.ResourcesUrl}thirdEndPoint{Constants.OdsApiQueryParams}");
+
+            _odsApiCaller = new OdsApiCaller(_logger, _odsApiClient, new AppSettingsOdsApiEndpoints(Testing.GetOdsApiSettings()), commandArgs, _odsResourceEndpointUrlBuilder);
         }
 
         [Test]
-        public async Task GivenACallToOdsApi_ShouldReturnHealthCheckData()
+        public async Task should_return_stronglytyped_healthCheck_data()
         {
             var healthCheckData = await _odsApiCaller.GetHealthCheckDataAsync(Testing.AdminApiInstances.First());
             healthCheckData.ShouldBeEquivalentTo(Testing.HealthCheckData);

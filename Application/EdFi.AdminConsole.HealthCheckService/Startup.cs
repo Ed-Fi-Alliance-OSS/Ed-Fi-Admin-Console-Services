@@ -30,6 +30,7 @@ public static class Startup
         services.AddSingleton<ICommandArgs, CommandArgs>();
 
         services.AddTransient<IHttpRequestMessageBuilder, HttpRequestMessageBuilder>();
+        services.AddTransient<IOdsResourceEndpointUrlBuilder, OdsResourceEndpointUrlBuilder>();
 
         services.AddTransient<IAdminApiClient, AdminApiClient>();
         services.AddTransient<IOdsApiClient, OdsApiClient>();
