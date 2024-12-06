@@ -1,4 +1,4 @@
-# Ed-Fi-Admin-Console-Services
+# Ed-Fi-Admin-Console-Worker-Process
 
 This repository contains a collection of microservices designed to provide different standalone functionalities that can be used in Admin Console. Each microservice is developed independently, with its own configurations and specific documentation.
 
@@ -15,7 +15,7 @@ This repository contains a collection of microservices designed to provide diffe
 
 The goal of this repository is to centralize various microservices that can be used for developing applications based on microservices architectures. Each microservice is contained within its own folder and is independent of the others, allowing for easy integration, deployment, and maintenance.
 
-## Available Microservices
+## Available Worker-Processes
 
 ### Health Check
 
