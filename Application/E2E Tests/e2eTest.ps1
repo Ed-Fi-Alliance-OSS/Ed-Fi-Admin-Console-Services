@@ -3,20 +3,23 @@
 # The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 # See the LICENSE and NOTICES files in the project root for more information.
 
-# Global Variables
-$adminApi = "https://localhost:7214"
-$adminConsoleInstancesUrl = $adminApi + "/adminconsole/instances"
-$AdminConsoleHealthCheckUrl = $adminApi + "/adminconsole/healthcheck"
-$RegisterUrl = $adminApi + "/connect/register"
-$TokenUrl = $adminApi + "/connect/token"
-$clientId = "uu75"
-$clientSecret = "Gapuser1234*Gapuser1234*Gapuser1234*Gapuser1234*"
-$AdminConsoleHealthCheckWorkerProcessPath = "./../EdFi.AdminConsole.HealthCheckService/bin/Debug/net8.0/"
-$AdminConsoleHealthCheckWorkerProcessExe = "EdFi.AdminConsole.HealthCheckService.exe"
+function Read-EnvVariables {
+    $envFilePath = "$PSScriptRoot/.env"
+    $envFileContent = Get-Content -Path $envFilePath
+
+    foreach ($line in $envFileContent) {
+        if ($line -match "^\s*([^#][^=]+)=(.*)$") {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            [System.Environment]::SetEnvironmentVariable($name, $value)
+        }
+    }
+}
 
 function Register-AdminApiClient {
     $headers = @{
         "Content-Type" = "application/x-www-form-urlencoded"
+        "tenant" = $env:DEFAULTTENANT
     }
 
     $body = @{
@@ -26,7 +29,7 @@ function Register-AdminApiClient {
     }
 
     try {
-        $response = Invoke-RestMethod -Uri $RegisterUrl -Method Post -Headers $headers -Body $body -StatusCodeVariable statusCode
+        $response = Invoke-RestMethod -SkipCertificateCheck -Uri $RegisterUrl -Method Post -Headers $headers -Body $body -StatusCodeVariable statusCode
         
         $output = [PSCustomObject]@{
             Body        = $response
@@ -36,25 +39,25 @@ function Register-AdminApiClient {
         return $output
     }
     catch {
-        Write-Error "Failed to send request to $RegisterUrl. Error: $_"
+        Write-Error "Failed to send request to $RegisterUrl. Error: $_" -ErrorAction Stop
     }
-
-    # return Send-RestRequest -url $RegisterUrl -headers $headers -method "POST" -body $body
 }
 
 function Get-Token {
     $headers = @{
         "Content-Type"  = "application/x-www-form-urlencoded"
+        "tenant" = "$env:DEFAULTTENANT"
     }
 
     $body = @{
         "client_id" = $clientId
         "client_secret" = $clientSecret
         "grant_type" = "client_credentials"
+        "scope" = "edfi_admin_api/full_access"
     }
 
     try {
-        $response = Invoke-RestMethod -Uri $TokenUrl -Method Post -Headers $headers -Body $body -StatusCodeVariable statusCode
+        $response = Invoke-RestMethod -SkipCertificateCheck -Uri $TokenUrl -Method Post -Headers $headers -Body $body -StatusCodeVariable statusCode
         
         $output = [PSCustomObject]@{
             Body        = $response
@@ -64,27 +67,28 @@ function Get-Token {
         return $output
     }
     catch {
-        Write-Error "Failed to send request to $TokenUrl. Error: $_"
+        Write-Error "Failed to send request to $TokenUrl. Error: $_" -ErrorAction Stop
     }
 }
 
 function Create-Instance {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$access_token,
+
+        [Parameter(Mandatory = $true)]
+        [string]$filePath
+    )
+
     $headers = @{
-        "Authorization" = "Bearer $Token"
+        "Authorization" = "Bearer $access_token"
         "Content-Type"  = "application/json"
+        "tenant" = $env:DEFAULTTENANT
     }
 
-    $body = @{
-        "docId" = 1
-        "instanceId" = 1
-        "edOrgId" = 1
-        "tenantId" = 1
-        "document" = '{\"instanceId\": \"1\",\"tenantId\": \"1\",\"instanceName\": \"instance 1\",\"clientId\": \"RvcohKz9zHI4\",\"clientSecret\": \"E1iEFusaNf81xzCxwHfbolkC\",\"baseUrl\": \"https://api.ed-fi.org/v7.1/api\",\"resourcesUrl\":\"/data/v3/ed-fi/\", \"authenticationUrl\":\"/oauth/token/\"}'
-    } | ConvertTo-Json
-
     try {
-        $response = Invoke-RestMethod -Uri $adminConsoleInstancesUrl -Method Post -Headers $headers -Body $body -StatusCodeVariable statusCode
-        
+        $response = Invoke-RestMethod -SkipCertificateCheck -Uri $adminConsoleInstancesUrl -Method Post -Headers $headers -InFile $filePath -StatusCodeVariable statusCode
+
         $output = [PSCustomObject]@{
             Body        = $response
             StatusCode  = $statusCode
@@ -93,19 +97,24 @@ function Create-Instance {
         return $output
     }
     catch {
-        Write-Error "Failed to send request to $adminConsoleInstancesUrl. Error: $_"
+        Write-Error "Failed to send request to $adminConsoleInstancesUrl. Error: $_" -ErrorAction Stop
     }
 }
 
 function Get-HealthCheck {
-    $headers = @{
-        "Authorization" = "Bearer $Token"
-        "Content-Type"  = "application/json"
-    }
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$access_token
+    )
 
+    $headers = @{
+        "Authorization" = "Bearer $access_token"
+        "Content-Type"  = "application/json"
+        "tenant" = $env:DEFAULTTENANT
+    }
     
     try {
-        Invoke-RestMethod -Uri $AdminConsoleHealthCheckUrl -Method Get -Headers $headers -StatusCodeVariable statusCode
+        $response = Invoke-RestMethod -SkipCertificateCheck -Uri $AdminConsoleHealthCheckUrl -Method Get -Headers $headers -StatusCodeVariable statusCode
         
         $output = [PSCustomObject]@{
             Body        = $response
@@ -115,44 +124,87 @@ function Get-HealthCheck {
         return $output
     }
     catch {
-        Write-Error "Failed to send request to $AdminConsoleHealthCheckUrl. Error: $_"
+        Write-Error "Failed to send request to $AdminConsoleHealthCheckUrl. Error: $_" -ErrorAction Stop
     }
 }
 
-# 1. Register client on Admin Api
-$response = Register-AdminApiClient
-if ($response.StatusCode -ne 200) {
-    Write-Host "Not able to register user on Admin Api."
-    exit 1
+# Pre-Step
+Read-EnvVariables
+
+# Global Variables
+$adminConsoleInstancesUrl = "$env:ADMIN_API/adminconsole/instances"
+$AdminConsoleHealthCheckUrl = "$env:ADMIN_API/adminconsole/healthcheck"
+$RegisterUrl = "$env:ADMIN_API/connect/register"
+$TokenUrl = "$env:ADMIN_API/connect/token"
+$clientId = "client-" + $(New-Guid)
+$clientSecret = $env:CLIENT_SECRET
+$AdminConsoleHealthCheckWorkerProcessPath = $env:ADMIN_CONSOLE_HEALTHCHECK_WORKER_PROCESS_PATH
+
+if ($env:MULTITENANCY -eq "true")
+{
+    # 1. Register client on Admin Api
+    Write-Host "Register client..."
+    $response = Register-AdminApiClient
+    if ($response.StatusCode -ne 200) {
+        Write-Error "Not able to register user on Admin Api." -ErrorAction Stop
+    }
+
+    # 2. Get Token from Admin Api
+    Write-Host "Get token..."
+    $response = Get-Token
+    if ($response.StatusCode -ne 200) {
+        Write-Error "Not able to get token on Admin Api." -ErrorAction Stop
+    }
+
+    $access_token = $response.Body.access_token
+
+    # 3.1 Create Instance
+    Write-Host "Create Instance..."
+    $response = Create-Instance -access_token $access_token -filePath "./instance.json"
+    if ($response.StatusCode -ne 201) {
+        Write-Error "Not able to create instance on Admin Api - Console" -ErrorAction Stop
+    }
+
+    # 4. Call worker
+
+    Set-Location $AdminConsoleHealthCheckWorkerProcessPath
+
+    $clientIdArg = "--ClientId=$clientId"
+    $clientSecretArg = "--ClientSecret=$clientSecret"
+    $multitenancyArg = "--IsMultiTenant=true"
+    $tenantArg = "--Tenant=$env:DEFAULTTENANT"
+    $dotnetApp = "EdFi.AdminConsole.HealthCheckService.dll"
+
+    Write-Host "Call Ed-Fi-Admin-Console-Health-Check-Worker-Process..."
+    dotnet $dotnetApp $clientIdArg $clientSecretArg $multitenancyArg $tenantArg
+
+    Set-Location -Path $PSScriptRoot
+
+    # 5. Get HealthCheck
+    Write-Host "Get HealthCheck..."
+    $response = Get-HealthCheck -access_token $access_token
+    if ($response.StatusCode -ne 200) {
+        Write-Error "Not able to get get healthcheck on Admin Api." -ErrorAction Stop
+    }
+
+    # Check if the response is an array
+    Write-Host "Check response..."
+    if ($response.Body -is [System.Collections.IEnumerable]) {
+        # Iterate through each item in the array
+        foreach ($healthcheckItem in $response.Body) {
+            if ($healthcheckItem.document.healthy -ne $True) {
+                Write-Error "Instance: ${healthcheckItem.document.instanceId} is not healthy" -ErrorAction Stop
+            }
+            else {
+                Write-Host "Instance: ${healthcheckItem.document.instanceId} is healthy"
+            }
+        }
+    } else {
+        Write-Error "HealthCheck response is not an array." -ErrorAction Stop
+    }
+}
+else {
+    Write-Error "Single tenant not supported yet." -ErrorAction Stop
 }
 
-# 2. Get Token from Admin Api
-$response = Get-Token
-if ($response.StatusCode -ne 200) {
-    Write-Host "Not able to get token on Admin Api."
-    exit 1
-}
-
-$parsedResponse = $response.Body | ConvertFrom-Json
-$access_token = $parsedResponse.access_token
-
-# 3. Create Instance
-$response = Create-Instance
-if ($response.StatusCode -ne 201) {
-    Write-Host "Not able to create instance on Admin Api - Console"
-    exit 1
-}
-
-# 4. Call worker
-$exe = $AdminConsoleHealthCheckWorkerProcessPath + $AdminConsoleHealthCheckWorkerProcessExe
-&$exe --ClientId=$clientId --ClientSecret=$clientSecret
-
-# 5. Get HealthCheck
-$response = Get-HealthCheck
-if ($response.StatusCode -ne 200) {
-    Write-Host "Not able to get get healthcheck on Admin Api."
-    exit 1
-}
-
-Write-Host "HealthCheck Data returned from Admin Api:"
-Write-Host $response.Body
+Write-Host "HealthCheck Data returned. Process completed."
