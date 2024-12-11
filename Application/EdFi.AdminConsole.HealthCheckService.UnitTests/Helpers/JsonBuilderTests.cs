@@ -23,12 +23,14 @@ public class Given_a_set_of_healthCheck_data
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "Some endpoint",
-                    OdsApiEndpointCount = 2
+                    OdsApiEndpointCount = 2,
+                    AnyErrros = false
                 },
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "Other endpoint",
-                    OdsApiEndpointCount = 3
+                    OdsApiEndpointCount = 3,
+                    AnyErrros = false
                 }
             };
     }
@@ -42,6 +44,28 @@ public class Given_a_set_of_healthCheck_data
             var expectedHealthCheckJsonObjectPayload = "{\"healthy\": true,\"Some endpoint\": 2,\"Other endpoint\": 3}";
 
             var healthCheckJsonObjectPayload = JsonBuilder.BuildJsonObject(_endpoointCounts);
+
+            JObject.Parse(healthCheckJsonObjectPayload.ToString()).ShouldBeEquivalentTo(JObject.Parse(expectedHealthCheckJsonObjectPayload.ToString()));
+        }
+    }
+
+    [TestFixture]
+    public class When_a_json_is_built_with_errors : Given_a_set_of_healthCheck_data
+    {
+        [Test]
+        public void should_be_invalid()
+        {
+            var expectedHealthCheckJsonObjectPayload = "{\"healthy\": false,\"Some endpoint\": 2,\"Other endpoint\": 3,\"One more endpoint\": 0}";
+
+            var endpoointCountsWithErrors = _endpoointCounts;
+            endpoointCountsWithErrors.Add(new OdsApiEndpointNameCount
+            {
+                OdsApiEndpointName = "One more endpoint",
+                OdsApiEndpointCount = 0,
+                AnyErrros = true
+            });
+
+            var healthCheckJsonObjectPayload = JsonBuilder.BuildJsonObject(endpoointCountsWithErrors);
 
             JObject.Parse(healthCheckJsonObjectPayload.ToString()).ShouldBeEquivalentTo(JObject.Parse(expectedHealthCheckJsonObjectPayload.ToString()));
         }

@@ -49,17 +49,20 @@ public class Testing
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "firstEndPoint",
-                    OdsApiEndpointCount = 3
+                    OdsApiEndpointCount = 3,
+                    AnyErrros = false
                 },
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "secondEndpoint",
-                    OdsApiEndpointCount = 8
+                    OdsApiEndpointCount = 8,
+                    AnyErrros = false
                 },
                 new OdsApiEndpointNameCount()
                 {
                     OdsApiEndpointName = "thirdEndPoint",
-                    OdsApiEndpointCount = 5
+                    OdsApiEndpointCount = 5,
+                    AnyErrros = false
                 }
             };
         }

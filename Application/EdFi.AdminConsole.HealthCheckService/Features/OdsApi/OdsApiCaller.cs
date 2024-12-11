@@ -59,6 +59,8 @@ public class OdsApiCaller : IOdsApiCaller
 
         if (response != null && response.StatusCode == System.Net.HttpStatusCode.OK && response.Headers != null && response.Headers.Contains(Constants.TotalCountHeader))
             result.OdsApiEndpointCount = int.Parse(response.Headers.GetValues(Constants.TotalCountHeader).First());
+        else
+            result.AnyErrros = true;
 
         return result;
     }
