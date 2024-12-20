@@ -71,6 +71,81 @@ function Get-Token {
     }
 }
 
+function Set-CredentialsOnInstance {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$key,
+
+        [Parameter(Mandatory = $true)]
+        [string]$secret
+    )
+
+    (Get-Content ./instance.json).Replace('%key%', $key) | Set-Content ./instance.json
+    (Get-Content ./instance.json).Replace('%secret%', $secret) | Set-Content ./instance.json
+}
+
+function Create-Vendor { 
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$access_token,
+
+        [Parameter(Mandatory = $true)]
+        [string]$filePath
+    )
+
+    $headers = @{
+        "Authorization" = "Bearer $access_token"
+        "Content-Type"  = "application/json"
+        "tenant" = $env:DEFAULTTENANT
+    }
+
+    try {
+        $response = Invoke-RestMethod -SkipCertificateCheck -Uri "$adminApiUrl/v2/vendors" -Method Post -Headers $headers -InFile $filePath -StatusCodeVariable statusCode -ResponseHeadersVariable responseHeaders
+
+        $output = [PSCustomObject]@{
+            Body            = $response
+            StatusCode      = $statusCode
+            ResponseHeaders = $responseHeaders
+        }
+
+        return $output
+    }
+    catch {
+        Write-Error "Failed to send request to $adminApiUrl. Error: $_" -ErrorAction Stop
+    }
+
+}
+
+function Create-Application { 
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$access_token,
+
+        [Parameter(Mandatory = $true)]
+        [string]$filePath
+    )
+
+    $headers = @{
+        "Authorization" = "Bearer $access_token"
+        "Content-Type"  = "application/json"
+        "tenant" = $env:DEFAULTTENANT
+    }
+
+    try {
+        $response = Invoke-RestMethod -SkipCertificateCheck -Uri "$adminApiUrl/v2/applications" -Method Post -Headers $headers -InFile $filePath -StatusCodeVariable statusCode
+
+        $output = [PSCustomObject]@{
+            Body        = $response
+            StatusCode  = $statusCode
+        }
+
+        return $output
+    }
+    catch {
+        Write-Error "Failed to send request to $adminApiUrl. Error: $_" -ErrorAction Stop
+    }
+}
+
 function Create-Instance {
     param (
         [Parameter(Mandatory = $true)]
@@ -132,6 +207,7 @@ function Get-HealthCheck {
 Read-EnvVariables
 
 # Global Variables
+$adminApiUrl = $env:ADMIN_API
 $adminConsoleInstancesUrl = "$env:ADMIN_API/adminconsole/instances"
 $AdminConsoleHealthCheckUrl = "$env:ADMIN_API/adminconsole/healthcheck"
 $RegisterUrl = "$env:ADMIN_API/connect/register"
@@ -158,7 +234,24 @@ if ($env:MULTITENANCY -eq "true")
 
     $access_token = $response.Body.access_token
 
-    # 3.1 Create Instance
+    # 3.1 Create vendor and application on admin api
+    $response = Create-Vendor -access_token $access_token -filePath "./vendor.json"
+    if ($response.StatusCode -ne 201) {
+        Write-Error "Not able to create vendor on Admin Api." -ErrorAction Stop
+    }
+
+    $vendorId = $response.ResponseHeaders.location -replace '\D'
+    (Get-Content ./application.json).Replace('123456789', $vendorId) | Set-Content ./application.json
+
+    $response = Create-Application -access_token $access_token -filePath "./application.json"
+    if ($response.StatusCode -ne 201) {
+        Write-Error "Not able to create application on Admin Api." -ErrorAction Stop
+    }
+
+    # 3.2
+    Set-CredentialsOnInstance -key $response.Body.key -secret $response.Body.secret
+
+    # 3.3 Create Instance
     Write-Host "Create Instance..."
     $response = Create-Instance -access_token $access_token -filePath "./instance.json"
     if ($response.StatusCode -ne 201) {
@@ -166,7 +259,6 @@ if ($env:MULTITENANCY -eq "true")
     }
 
     # 4. Call worker
-
     Set-Location $AdminConsoleHealthCheckWorkerProcessPath
 
     $clientIdArg = "--ClientId=$clientId"
@@ -197,6 +289,27 @@ if ($env:MULTITENANCY -eq "true")
             }
             else {
                 Write-Host "Instance: ${healthcheckItem.document.instanceId} is healthy"
+            }
+
+            if ($healthcheckItem.document.studentSchoolAssociations -ne 3230) {
+                Write-Error "Count value for: studentSchoolAssociations is not correct" -ErrorAction Stop
+            }
+            else {
+                Write-Host "Total count for studentSchoolAssociations looks good."
+            }
+
+            if ($healthcheckItem.document.sections -ne 1376) {
+                Write-Error "Count value for: sections is not correct" -ErrorAction Stop
+            }
+            else {
+                Write-Host "Total count for sections looks good."
+            }
+
+            if ($healthcheckItem.document.studentSectionAssociations -ne 50242) {
+                Write-Error "Count value for: studentSectionAssociations is not correct" -ErrorAction Stop
+            }
+            else {
+                Write-Host "Total count for studentSectionAssociations looks good."
             }
         }
     } else {

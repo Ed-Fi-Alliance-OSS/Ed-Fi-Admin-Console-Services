@@ -1,0 +1,11 @@
+{
+  "applicationName": "first application",
+  "vendorId": 123456789,
+  "claimSetName": "Ed-Fi API Publisher - Reader",
+  "educationOrganizationIds": [
+    255901002
+  ],
+  "odsInstanceIds": [
+    1
+  ]
+}

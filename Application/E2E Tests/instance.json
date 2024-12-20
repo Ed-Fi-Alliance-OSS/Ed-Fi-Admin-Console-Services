@@ -1,0 +1,7 @@
+{
+    "docId": 1,
+    "instanceId": 1,
+    "edOrgId": 1,
+    "tenantId": 1,
+    "document": "{\"instanceId\": \"1\",\"tenantId\": \"1\",\"instanceName\": \"instance 1\",\"clientId\": \"%key%\",\"clientSecret\": \"%secret%\",\"baseUrl\": \"https://localhost/api\",\"resourcesUrl\":\"/data/v3/ed-fi/\", \"authenticationUrl\":\"/oauth/token/\"}"
+}
